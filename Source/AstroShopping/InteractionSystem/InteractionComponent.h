@@ -34,6 +34,12 @@ private:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UInteractionHintWidget> HintWidgetClass;
 
+	UPROPERTY(EditAnywhere)
+	float TraceInterval = 0.01f;
+
+	UPROPERTY()
+	float TraceAccumulator = 0;
+
 	void RemoveInteractable();
 
 	void UpdateInteractable(AActor* NewInteractable);

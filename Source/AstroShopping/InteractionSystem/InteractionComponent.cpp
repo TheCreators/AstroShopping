@@ -50,6 +50,10 @@ void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	TraceAccumulator += DeltaTime;
+	if (TraceAccumulator < TraceInterval) return;
+	TraceAccumulator = 0;
+
 	FTransform TraceStart = bUseCamera ? Camera->GetComponentTransform() : Owner->GetActorTransform();
 
 	FVector Start = TraceStart.GetLocation();
