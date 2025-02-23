@@ -4,6 +4,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Components/WidgetComponent.h"
+#include "AstroShopping/InteractionSystem/InteractionComponent.h"
 
 
 AAstroShoppingCharacter::AAstroShoppingCharacter()
@@ -22,6 +23,8 @@ AAstroShoppingCharacter::AAstroShoppingCharacter()
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
+
+	InteractionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComponent"));
 }
 
 void AAstroShoppingCharacter::BeginPlay()
@@ -47,6 +50,8 @@ void AAstroShoppingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
         EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAstroShoppingCharacter::Move);
 
         EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAstroShoppingCharacter::Look);
+
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AAstroShoppingCharacter::Interact);
     }
 }
 
@@ -56,7 +61,6 @@ void AAstroShoppingCharacter::Move(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
-		// add movement 
 		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
 		AddMovementInput(GetActorRightVector(), MovementVector.X);
 	}
@@ -70,5 +74,13 @@ void AAstroShoppingCharacter::Look(const FInputActionValue& Value)
 	{
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void AAstroShoppingCharacter::Interact(const FInputActionValue& Value)
+{
+	if (InteractionComponent)
+	{
+		InteractionComponent->TryInteract();
 	}
 }
