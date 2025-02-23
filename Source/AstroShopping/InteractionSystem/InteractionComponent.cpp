@@ -20,11 +20,6 @@ void UInteractionComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-	if (!GetOwner()->HasLocalNetOwner())
-	{
-		return;
-	}
-
 	Camera = Owner->FindComponentByClass<UCameraComponent>();
 	bUseCamera = Camera != nullptr;
 
@@ -32,16 +27,27 @@ void UInteractionComponent::BeginPlay()
 	if (HintWidgetComponent)
 	{
 		HintWidgetComponent->RegisterComponent();
-		HintWidgetComponent->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+		if (USceneComponent* Root = Owner->GetRootComponent())
+		{
+			HintWidgetComponent->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);
+		}
 		Owner->AddInstanceComponent(HintWidgetComponent);
 		HintWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 		HintWidgetComponent->SetDrawAtDesiredSize(true);
 
-		HintWidget = CreateWidget<UInteractionHintWidget>(GetWorld(), HintWidgetClass);
-		if (HintWidget)
+		if (HintWidgetClass)
 		{
-			HintWidgetComponent->SetWidget(HintWidget);
-			HintWidget->SetVisibility(ESlateVisibility::Collapsed);
+			HintWidget = CreateWidget<UInteractionHintWidget>(GetWorld(), HintWidgetClass);
+			if (HintWidget)
+			{
+				HintWidgetComponent->SetWidget(HintWidget);
+				HintWidget->SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Missing HintWidgetClass in %s"), *GetName());
+			return;
 		}
 	}
 }
@@ -123,6 +129,15 @@ void UInteractionComponent::RemoveInteractable()
 
 void UInteractionComponent::UpdateInteractable(AActor* NewInteractable)
 {
+	if (HintWidgetComponent && NewInteractable)
+	{
+		if (const FVector WidgetLocation = IInteractable::Execute_GetInteractionHintLocation(NewInteractable); 
+			!WidgetLocation.IsZero())
+		{
+			HintWidgetComponent->SetWorldLocation(WidgetLocation);
+		}
+	}
+
 	if (HintWidgetComponent)
 	{
 		HintWidgetComponent->SetWorldLocation(IInteractable::Execute_GetInteractionHintLocation(NewInteractable));
