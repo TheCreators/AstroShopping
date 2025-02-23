@@ -26,7 +26,7 @@ private:
 	float InteractionRange = 300.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	float InteractionTraceSchereRadius = 50.0;
+	float InteractionTraceSphereRadius = 50.0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	bool bDebug = false;
