@@ -11,8 +11,6 @@ UInteractionComponent::UInteractionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicatedByDefault(true);
-
-	Owner = GetOwner();
 }
 
 
@@ -20,8 +18,11 @@ void UInteractionComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-	if (!GetOwner()->HasLocalNetOwner())
+	Owner = GetOwner();
+
+	if (!Owner)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("InteractionComponent has no Owner!"));
 		return;
 	}
 
@@ -32,16 +33,27 @@ void UInteractionComponent::BeginPlay()
 	if (HintWidgetComponent)
 	{
 		HintWidgetComponent->RegisterComponent();
-		HintWidgetComponent->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+		if (USceneComponent* Root = Owner->GetRootComponent())
+		{
+			HintWidgetComponent->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);
+		}
 		Owner->AddInstanceComponent(HintWidgetComponent);
 		HintWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 		HintWidgetComponent->SetDrawAtDesiredSize(true);
 
-		HintWidget = CreateWidget<UInteractionHintWidget>(GetWorld(), HintWidgetClass);
-		if (HintWidget)
+		if (HintWidgetClass)
 		{
-			HintWidgetComponent->SetWidget(HintWidget);
-			HintWidget->SetVisibility(ESlateVisibility::Collapsed);
+			HintWidget = CreateWidget<UInteractionHintWidget>(GetWorld(), HintWidgetClass);
+			if (HintWidget)
+			{
+				HintWidgetComponent->SetWidget(HintWidget);
+				HintWidget->SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Missing HintWidgetClass in %s"), *GetName());
+			return;
 		}
 	}
 }
@@ -50,21 +62,31 @@ void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	FTransform TraceStart = bUseCamera ? Camera->GetComponentTransform() : Owner->GetActorTransform();
+	TraceAccumulator += DeltaTime;
+	if (TraceAccumulator < TraceInterval)
+	{
+		return;
+	}
+	TraceAccumulator = 0;
+
+	FTransform TraceStart = bUseCamera && Camera.IsValid() ? Camera->GetComponentTransform() : Owner->GetActorTransform();
 
 	FVector Start = TraceStart.GetLocation();
 	FVector End = Start + TraceStart.GetRotation().GetForwardVector() * InteractionRange;
 
 	FHitResult HitResult;
 
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(Owner);
+
 	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
 		GetWorld(),
 		Start,
 		End,
-		InteractionTraceSchereRadius,
+		InteractionTraceSphereRadius,
 		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel2),
 		false,
-		TArray<AActor*>{Owner},
+		ActorsToIgnore,
 		bDebug ? EDrawDebugTrace::ForOneFrame : EDrawDebugTrace::None,
 		HitResult,
 		true,
@@ -99,17 +121,17 @@ void UInteractionComponent::ServerInteract_Implementation(AActor* TargetInteract
 
 void UInteractionComponent::TryInteract()
 {
-	if (Interactable)
+	if (Interactable.IsValid())
 	{
-		ServerInteract(Interactable);
+		ServerInteract(Interactable.Get());
 	}
 }
 
 void UInteractionComponent::RemoveInteractable()
 {
-	if (Interactable)
+	if (Interactable.IsValid())
 	{
-		Interactable = nullptr;
+		Interactable.Reset();
 		if (HintWidget)
 		{
 			HintWidget->SetVisibility(ESlateVisibility::Collapsed);
@@ -119,9 +141,13 @@ void UInteractionComponent::RemoveInteractable()
 
 void UInteractionComponent::UpdateInteractable(AActor* NewInteractable)
 {
-	if (HintWidgetComponent)
+	if (HintWidgetComponent && NewInteractable)
 	{
-		HintWidgetComponent->SetWorldLocation(IInteractable::Execute_GetInteractionHintLocation(NewInteractable));
+		if (const FVector WidgetLocation = IInteractable::Execute_GetInteractionHintLocation(NewInteractable); 
+			!WidgetLocation.IsZero())
+		{
+			HintWidgetComponent->SetWorldLocation(WidgetLocation);
+		}
 	}
 	
 	if (NewInteractable == Interactable)

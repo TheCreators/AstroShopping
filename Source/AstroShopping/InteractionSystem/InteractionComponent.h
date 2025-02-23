@@ -22,11 +22,15 @@ private:
 	UFUNCTION(Server, Reliable)
 	void ServerInteract(AActor* TargetInteractable);
 
+	void RemoveInteractable();
+
+	void UpdateInteractable(AActor* NewInteractable);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	float InteractionRange = 300.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	float InteractionTraceSchereRadius = 50.0;
+	float InteractionTraceSphereRadius = 50.0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	bool bDebug = false;
@@ -34,19 +38,25 @@ private:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UInteractionHintWidget> HintWidgetClass;
 
-	void RemoveInteractable();
+	UPROPERTY(EditAnywhere)
+	float TraceInterval = 0.01f;
 
-	void UpdateInteractable(AActor* NewInteractable);
+	UPROPERTY()
+	float TraceAccumulator = 0;
 
 	bool bUseCamera;
 
 	AActor* Owner;
 
-	class UCameraComponent* Camera;
+	UPROPERTY()
+	TWeakObjectPtr<class UCameraComponent> Camera;
 
-	AActor* Interactable;
+	UPROPERTY()
+	TWeakObjectPtr<AActor> Interactable;
 
-	class UWidgetComponent* HintWidgetComponent;
+	UPROPERTY()
+	TObjectPtr<class UWidgetComponent> HintWidgetComponent;
 
-	class UUserWidget* HintWidget;
+	UPROPERTY()
+	TObjectPtr<class UUserWidget> HintWidget;
 };
