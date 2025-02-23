@@ -11,14 +11,20 @@ UInteractionComponent::UInteractionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicatedByDefault(true);
-
-	Owner = GetOwner();
 }
 
 
 void UInteractionComponent::BeginPlay()
 {
     Super::BeginPlay();
+
+	Owner = GetOwner();
+
+	if (!Owner)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("InteractionComponent has no Owner!"));
+		return;
+	}
 
 	Camera = Owner->FindComponentByClass<UCameraComponent>();
 	bUseCamera = Camera != nullptr;
@@ -57,7 +63,10 @@ void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	TraceAccumulator += DeltaTime;
-	if (TraceAccumulator < TraceInterval) return;
+	if (TraceAccumulator < TraceInterval)
+	{
+		return;
+	}
 	TraceAccumulator = 0;
 
 	FTransform TraceStart = bUseCamera && Camera.IsValid() ? Camera->GetComponentTransform() : Owner->GetActorTransform();
@@ -67,6 +76,9 @@ void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 	FHitResult HitResult;
 
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(Owner);
+
 	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
 		GetWorld(),
 		Start,
@@ -74,7 +86,7 @@ void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 		InteractionTraceSphereRadius,
 		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel2),
 		false,
-		TArray<AActor*>{Owner},
+		ActorsToIgnore,
 		bDebug ? EDrawDebugTrace::ForOneFrame : EDrawDebugTrace::None,
 		HitResult,
 		true,
@@ -136,11 +148,6 @@ void UInteractionComponent::UpdateInteractable(AActor* NewInteractable)
 		{
 			HintWidgetComponent->SetWorldLocation(WidgetLocation);
 		}
-	}
-
-	if (HintWidgetComponent)
-	{
-		HintWidgetComponent->SetWorldLocation(IInteractable::Execute_GetInteractionHintLocation(NewInteractable));
 	}
 	
 	if (NewInteractable == Interactable)
