@@ -60,7 +60,7 @@ void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	if (TraceAccumulator < TraceInterval) return;
 	TraceAccumulator = 0;
 
-	FTransform TraceStart = bUseCamera ? Camera->GetComponentTransform() : Owner->GetActorTransform();
+	FTransform TraceStart = bUseCamera && Camera.IsValid() ? Camera->GetComponentTransform() : Owner->GetActorTransform();
 
 	FVector Start = TraceStart.GetLocation();
 	FVector End = Start + TraceStart.GetRotation().GetForwardVector() * InteractionRange;
@@ -109,17 +109,17 @@ void UInteractionComponent::ServerInteract_Implementation(AActor* TargetInteract
 
 void UInteractionComponent::TryInteract()
 {
-	if (Interactable)
+	if (Interactable.IsValid())
 	{
-		ServerInteract(Interactable);
+		ServerInteract(Interactable.Get());
 	}
 }
 
 void UInteractionComponent::RemoveInteractable()
 {
-	if (Interactable)
+	if (Interactable.IsValid())
 	{
-		Interactable = nullptr;
+		Interactable.Reset();
 		if (HintWidget)
 		{
 			HintWidget->SetVisibility(ESlateVisibility::Collapsed);
