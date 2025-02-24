@@ -21,6 +21,8 @@ AAstroShoppingCharacter::AAstroShoppingCharacter()
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
 
+	GetMesh()->SetOwnerNoSee(true);
+
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
 
