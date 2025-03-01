@@ -133,13 +133,10 @@ void UInteractionComponent::TryInteract()
 
 void UInteractionComponent::RemoveInteractable()
 {
-	if (Interactable.IsValid())
+	Interactable.Reset();
+	if (HintWidget)
 	{
-		Interactable.Reset();
-		if (HintWidget)
-		{
-			HintWidget->SetVisibility(ESlateVisibility::Collapsed);
-		}
+		HintWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
 
