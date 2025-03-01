@@ -10,7 +10,6 @@
 UInteractionComponent::UInteractionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	SetIsReplicatedByDefault(true);
 }
 
 
@@ -55,6 +54,11 @@ void UInteractionComponent::BeginPlay()
 			UE_LOG(LogTemp, Error, TEXT("Missing HintWidgetClass in %s"), *GetName());
 			return;
 		}
+	}
+
+	if (APawn* OwnerPawn = Cast<APawn>(Owner))
+	{
+		SetComponentTickEnabled(OwnerPawn->IsLocallyControlled());
 	}
 }
 
