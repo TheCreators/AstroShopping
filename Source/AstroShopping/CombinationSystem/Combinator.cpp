@@ -1,7 +1,10 @@
-#include "Combinator.h"
+﻿#include "Combinator.h"
 #include "Net/UnrealNetwork.h"
 #include <ctime>
 #include "glTFRuntimeFunctionLibrary.h"
+#include "AstroShopping/AI/LlmApiClient.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
 
 ACombinator::ACombinator()
 {
@@ -9,6 +12,11 @@ ACombinator::ACombinator()
 
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
+
+    LlmApiClient = MakeUnique<FLlmApiClient>(
+        FPlatformMisc::GetEnvironmentVariable(TEXT("ASTRO_SHOPPING_LLM_API_KEY")),
+        TEXT("https://api.proxyapi.ru/google/v1/models/gemini-2.0-flash:generateContent")
+    );
 }
 
 void ACombinator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -18,8 +26,71 @@ void ACombinator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	DOREPLIFETIME(ACombinator, bIsCombining);
 }
 
+void ACombinator::GenerateCombinedItemProps(
+    const FString& InputText,
+    TFunction<void(FString, FString)> OnSuccess,
+    TFunction<void(FString)> OnError)
+{
+    if (!LlmApiClient)
+    {
+        OnError(TEXT("LlmApiClient is not initialized"));
+        return;
+    }
+
+    LlmApiClient->SendRequest(InputText,
+        [this, OnSuccess, OnError](const FString& ResponseContent)
+        {
+            FString CleanedJson = ResponseContent;
+            CleanedJson = CleanedJson.Replace(TEXT("```json"), TEXT(""));
+            CleanedJson = CleanedJson.Replace(TEXT("```"), TEXT(""));
+            CleanedJson = CleanedJson.TrimStartAndEnd();
+
+            TSharedPtr<FJsonObject> DataObject;
+            TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(CleanedJson);
+            if (FJsonSerializer::Deserialize(JsonReader, DataObject) && DataObject.IsValid())
+            {
+                FString Name, Description;
+                if (DataObject->TryGetStringField(TEXT("name"), Name) &&
+                    DataObject->TryGetStringField(TEXT("desc"), Description))
+                {
+                    OnSuccess(Name, Description);
+                }
+                else
+                {
+                    OnError(TEXT("Unable to extract 'name' or 'description' field from JSON. Response: ") + ResponseContent);
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to parse cleaned JSON: %s"), *CleanedJson);
+                OnError(TEXT("Failed to parse cleaned JSON."));
+            }
+        },
+        OnError,
+        true
+    );
+}
+
+
 void ACombinator::Server_StartCombination_Implementation(const FString& FirstProductName, const FString& SecondProductName)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Combining %s & %s"), *FirstProductName, *SecondProductName));
+
+    FString Prompt = FString::Printf(TEXT(R"(Combine %s & %s into a new item. Return valid JSON:{"name": "Title Case Name","desc": "Concise, vivid description for 3D modeling. Max 20 words"}. Ensure description is clear for visual representation)"), *FirstProductName, *SecondProductName);
+
+    GenerateCombinedItemProps(
+        Prompt,
+        [this](FString GeneratedName, FString GeneratedDescription) {
+			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Generated Name: %s"), *GeneratedName));
+			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Generated Description: %s"), *GeneratedDescription));
+        },
+        [](FString ErrorMessage) {
+			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, ErrorMessage);
+        }
+    );
+
+	return;
+
 	bIsCombining = true;
 
 	AsyncTask(ENamedThreads::AnyThread, [this]()

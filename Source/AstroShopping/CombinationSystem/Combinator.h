@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "AstroShopping/AI/LlmApiClient.h"
 #include "Combinator.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCombinationComplete, UStaticMesh*, ResultMesh);
@@ -39,4 +40,8 @@ private:
 
 	UFUNCTION()
 	void OnModelLoaded(UStaticMesh* StaticMesh);
+
+	TUniquePtr<FLlmApiClient> LlmApiClient;
+
+	void GenerateCombinedItemProps(const FString& InputText, TFunction<void(FString, FString)> OnSuccess, TFunction<void(FString)> OnError);
 };
