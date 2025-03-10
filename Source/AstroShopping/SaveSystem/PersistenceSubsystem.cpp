@@ -3,11 +3,6 @@
 #include <Kismet/GameplayStatics.h>
 #include "Saveable.h"
 
-void UPersistenceSubsystem::Deinitialize()
-{
-	RequestSave(false);
-}
-
 void UPersistenceSubsystem::CreateGameSave()
 {
 	CurrentGameSave = Cast<UAstroShoppingSaveGame>(UGameplayStatics::CreateSaveGameObject(UAstroShoppingSaveGame::StaticClass()));
@@ -52,6 +47,11 @@ bool UPersistenceSubsystem::DoesGameSaveExistOnDisk()
 void UPersistenceSubsystem::RequestSave(bool bAsync)
 {
 	TArray<AActor*> SaveableActors;
+	if (!IsValid(GetWorld()))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("World is not valid!"));
+		return;
+	}
 	UGameplayStatics::GetAllActorsWithInterface(GetWorld(), USaveable::StaticClass(), SaveableActors);
 
 	TArray<UObject*> SaveableObjects;
