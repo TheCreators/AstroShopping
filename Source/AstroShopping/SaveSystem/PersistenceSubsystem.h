@@ -13,8 +13,6 @@ class ASTROSHOPPING_API UPersistenceSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	virtual void Deinitialize() override;
-
 	UFUNCTION(BlueprintCallable)
 	void CreateGameSave();
 

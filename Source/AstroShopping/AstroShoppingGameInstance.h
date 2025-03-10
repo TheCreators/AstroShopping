@@ -9,4 +9,6 @@ class ASTROSHOPPING_API UAstroShoppingGameInstance : public UAdvancedFriendsGame
 {
 	GENERATED_BODY()
 
+public:
+	virtual void Shutdown() override;
 };
