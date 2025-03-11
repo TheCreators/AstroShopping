@@ -19,7 +19,7 @@ public:
 	void Interact(AActor* Instigator);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interaction")
-	bool CanInteract();
+	bool CanInteract(AActor* Instigator);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interaction")
 	FVector GetInteractionHintLocation();
