@@ -3,8 +3,10 @@
 #include <ctime>
 #include "glTFRuntimeFunctionLibrary.h"
 #include "AstroShopping/AI/LlmApiClient.h"
+#include "AstroShopping/AI/GenieApiClient.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
+#include "AstroShopping/AstroShoppingUserSettings.h"
 
 ACombinator::ACombinator()
 {
@@ -12,11 +14,22 @@ ACombinator::ACombinator()
 
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
+}
 
-    LlmApiClient = MakeUnique<FLlmApiClient>(
-        FPlatformMisc::GetEnvironmentVariable(TEXT("ASTRO_SHOPPING_LLM_API_KEY")),
-        TEXT("https://api.proxyapi.ru/google/v1/models/gemini-2.0-flash:generateContent")
-    );
+void ACombinator::BeginPlay()
+{
+	Super::BeginPlay();
+
+	UAstroShoppingUserSettings* UserSettings = UAstroShoppingUserSettings::GetAstroShoppingUserSettings();
+
+	LlmApiClient = MakeUnique<FLlmApiClient>(
+		UserSettings->GetProxyApiKey(),
+		TEXT("https://api.proxyapi.ru/google/v1/models/gemini-2.0-flash:generateContent")
+	);
+
+	GenieApiClient = MakeUnique<FGenieApiClient>(
+		UserSettings->GetGenieRefreshToken()
+	);
 }
 
 void ACombinator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -71,48 +84,110 @@ void ACombinator::GenerateCombinedItemProps(
     );
 }
 
+void ACombinator::GenerateCombinedItemModels(const FString& Prompt, TFunction<void(FString)> OnSuccess, TFunction<void(FString)> OnError)
+{
+    if (!GenieApiClient)
+    {
+        OnError(TEXT("GenieApiClient is not initialized"));
+        return;
+    }
+
+    // Send the initial request to generate models.
+    GenieApiClient->SendModelsGenerationRequest(
+        Prompt,
+        [this, OnSuccess, OnError](const FModelsGenerationResponse& ModelsGenerationResponse)
+        {
+            if (ModelsGenerationResponse.ModelIds.Num() == 0)
+            {
+                OnError(TEXT("No model IDs were returned."));
+                return;
+            }
+
+            FString ModelId = ModelsGenerationResponse.ModelIds[0];
+
+            TSharedPtr<TFunction<void()>> PollStatusPtr = MakeShared<TFunction<void()>>();
+            *PollStatusPtr = [this, ModelId, OnSuccess, OnError, PollStatusPtr]()
+                {
+                    GenieApiClient->SendModelsStatusRequest(
+                        ModelId,
+                        [this, ModelId, OnSuccess, OnError, PollStatusPtr](const FModelStatusResponse& ModelStatusResponse)
+                        {
+                            UE_LOG(LogTemp, Log, TEXT("Polled status for model %s: %s. Model url: %s"), *ModelId, *ModelStatusResponse.Status, *ModelStatusResponse.ThumbnailUrl);
+
+                            //if (ModelStatusResponse.Status.Equals(TEXT("completed"), ESearchCase::IgnoreCase))
+                            if (!ModelStatusResponse.ModelUrl.Equals(TEXT("")))
+                            {
+                                OnSuccess(ModelStatusResponse.ModelUrl);
+                            }
+                            else
+                            {
+                                const float PollDelay = 2.0f;
+                                if (GetWorld())
+                                {
+                                    FTimerHandle TimerHandle;
+                                    GetWorld()->GetTimerManager().SetTimer(
+                                        TimerHandle,
+                                        FTimerDelegate::CreateLambda([PollStatusPtr]()
+                                            {
+                                                (*PollStatusPtr)();
+                                            }),
+                                        PollDelay,
+                                        false
+                                    );
+                                }
+                                else
+                                {
+                                    OnError(TEXT("World context is missing for status polling."));
+                                }
+                            }
+                        },
+                        OnError
+                    );
+                };
+
+            // Start polling.
+            (*PollStatusPtr)();
+        },
+        OnError
+    );
+}
 
 void ACombinator::Server_StartCombination_Implementation(const FString& FirstProductName, const FString& SecondProductName)
 {
+    bIsCombining = true;
+
 	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Combining %s & %s"), *FirstProductName, *SecondProductName));
 
-    FString Prompt = FString::Printf(TEXT(R"(Combine %s & %s into a new item. Return valid JSON:{"name": "Title Case Name","desc": "Concise, vivid description for 3D modeling. Max 20 words"}. Ensure description is clear for visual representation)"), *FirstProductName, *SecondProductName);
+    FString Prompt = FString::Printf(TEXT(R"(Combine %s & %s into a new item. Return valid JSON:{"name": "Simple Combined Name","desc": "Clear, literal description for 3D modeling. Focus on basic shape and material. Max 15 words"}. Avoid metaphors and poetic language)"), *FirstProductName, *SecondProductName);
 
     GenerateCombinedItemProps(
         Prompt,
         [this](FString GeneratedName, FString GeneratedDescription) {
-			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Generated Name: %s"), *GeneratedName));
-			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Generated Description: %s"), *GeneratedDescription));
+            GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Generated Name: %s"), *GeneratedName));
+            GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Generated Description: %s"), *GeneratedDescription));
+
+            GenerateCombinedItemModels(
+                GeneratedDescription,
+                [this](FString ModelUrl) {
+                    GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Model URL: %s"), *ModelUrl));
+					AsyncTask(ENamedThreads::AnyThread, [this, ModelUrl]()
+                        {
+							AsyncTask(ENamedThreads::GameThread, [this, ModelUrl]()
+                                {
+                                    ModelUrls.Add(ModelUrl);
+                                    OnRep_ModelUrls();
+                                });
+                        });
+                },
+                [](FString ErrorMessage) {
+                    GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, ErrorMessage);
+                }
+            );
         },
         [](FString ErrorMessage) {
-			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, ErrorMessage);
+            GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, ErrorMessage);
         }
     );
-
-	return;
-
-	bIsCombining = true;
-
-	AsyncTask(ENamedThreads::AnyThread, [this]()
-		{
-			//FPlatformProcess::Sleep(3.0);
-
-			TArray<FString> NewModelUrls = {
-				"https://cdn-luma.com/blender_convert/c6bb0fc8-8dab-4296-9663-962541b1bd98/cf23404dac6a_a08730d30c54_a_diamond_blue_Crys.glb",
-				"https://cdn-luma.com/imagine_3d_one/fee121c7-63b9-4b2f-91cd-a33218a21ac1/18119caf96ee_Test_sign__3d_asset_0_glb.glb",
-				"https://cdn-luma.com/imagine_3d_one/4997791a-315c-4d24-ba68-40da419010b8/91fc50713cdb_Test_sign__3d_asset_0_glb.glb"
-			};
-
-			int RandomIndex = rand() % NewModelUrls.Num();
-
-			FString Url = NewModelUrls[RandomIndex];
-
-			AsyncTask(ENamedThreads::GameThread, [this, Url]()
-				{
-					ModelUrls.Add(Url);
-					OnRep_ModelUrls();
-				});
-		});
 }
 
 void ACombinator::OnRep_ModelUrls()

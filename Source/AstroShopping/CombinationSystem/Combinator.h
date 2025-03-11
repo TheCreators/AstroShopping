@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "AstroShopping/AI/LlmApiClient.h"
+#include "AstroShopping/AI/GenieApiClient.h"
 #include "Combinator.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCombinationComplete, UStaticMesh*, ResultMesh);
@@ -14,6 +15,8 @@ class ASTROSHOPPING_API ACombinator : public AActor
 	
 public:
 	ACombinator();
+
+	virtual void BeginPlay() override;
 
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Combination")
 	void Server_StartCombination(const FString& Product1Name, const FString& Product2Name);
@@ -43,5 +46,9 @@ private:
 
 	TUniquePtr<FLlmApiClient> LlmApiClient;
 
+	TUniquePtr<FGenieApiClient> GenieApiClient;
+
 	void GenerateCombinedItemProps(const FString& InputText, TFunction<void(FString, FString)> OnSuccess, TFunction<void(FString)> OnError);
+
+	void GenerateCombinedItemModels(const FString& Prompt, TFunction<void(FString)> OnSuccess, TFunction<void(FString)> OnError);
 };
