@@ -37,7 +37,8 @@ public:
 private:
 	void WriteGameSaveToDisk(bool bAsync);
 
-	class UAstroShoppingSaveGame* CurrentGameSave;
+	UPROPERTY()
+	TObjectPtr<class UAstroShoppingSaveGame> CurrentGameSave;
 
 	FString SlotName = "GameSave";
 	
