@@ -106,7 +106,7 @@ void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 	AActor* HitActor = HitResult.GetActor();
 
-	if (!HitActor->Implements<UInteractable>() || !IInteractable::Execute_CanInteract(HitActor))
+	if (!HitActor->Implements<UInteractable>() || !IInteractable::Execute_CanInteract(HitActor, Owner))
 	{
 		RemoveInteractable();
 		return;
