@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
+#include "Structures/ProductSaveData.h"
 #include "AstroShoppingSaveGame.generated.h"
 
 UCLASS()
@@ -13,4 +14,7 @@ public:
 	void SaveAllData(TArray<UObject*> SaveableObjects);
 
 	void LoadDataForRequester(UObject* Requester);
+
+	UPROPERTY()
+	TMap<FGuid, FProductSaveData> Products;
 };

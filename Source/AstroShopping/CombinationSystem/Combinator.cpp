@@ -7,6 +7,9 @@
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
 #include "AstroShopping/AstroShoppingUserSettings.h"
+#include "AstroShopping/ProductSystem/Product.h"
+#include "AstroShopping/ProductSystem/ProductManager.h"
+#include "AstroShopping/GameMode/GameGameMode.h"
 
 ACombinator::ACombinator()
 {
@@ -14,6 +17,11 @@ ACombinator::ACombinator()
 
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
+
+    MaxProgress = 9;
+	Progress = 0;
+    MaxPollingAttempts = 32;
+    PollDelaySeconds = 2.0f;
 }
 
 void ACombinator::BeginPlay()
@@ -30,13 +38,97 @@ void ACombinator::BeginPlay()
 	GenieApiClient = MakeUnique<FGenieApiClient>(
 		UserSettings->GetGenieRefreshToken()
 	);
+
+    Reset();
 }
 
 void ACombinator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(ACombinator, ModelUrls);
+	DOREPLIFETIME(ACombinator, ProductModelUrls);
+	DOREPLIFETIME(ACombinator, ProductThumbnailUrls);
 	DOREPLIFETIME(ACombinator, bIsCombining);
+	DOREPLIFETIME(ACombinator, Progress);
+	DOREPLIFETIME(ACombinator, ProductName);
+	DOREPLIFETIME(ACombinator, Product);
+}
+
+void ACombinator::Reset()
+{
+	ProductThumbnails.Empty();
+    ProductThumbnails.SetNumZeroed(4);
+
+	bIsProductSelected = false;
+
+	LocalProduct = nullptr;
+
+	ProductMesh = nullptr;
+
+	SelectedProductIndex = -1;
+	
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, TEXT("Combinator reset from Server"));
+
+		bIsCombining = false;
+
+        Progress = 0;
+		OnRep_Progress();
+
+		ProductName.Reset();
+		OnRep_ProductName();
+
+		ProductModelUrls.Empty();
+        ProductModelUrls.SetNumZeroed(4);
+
+		ProductThumbnailUrls.Empty();
+        ProductThumbnailUrls.SetNumZeroed(4);
+        OnRep_ProductThumbnailUrls();
+
+		Product = nullptr;
+	}
+
+    OnCombinatorReset.Broadcast();
+}
+
+void ACombinator::IncreaseProgress()
+{
+    Progress++;
+    OnRep_Progress();
+}
+
+void ACombinator::ResetProgress()
+{
+    Progress = 0;
+    OnRep_Progress();
+}
+
+void ACombinator::Server_StartCombination_Implementation(const FString& FirstProductName, const FString& SecondProductName)
+{
+    bIsCombining = true;
+
+    GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Combining %s & %s"), *FirstProductName, *SecondProductName));
+
+    FString Prompt = FString::Printf(TEXT(R"(Combine %s & %s into a new item. Return valid JSON:{"name": "Simple Combined Name","desc": "Clear, literal description for 3D modeling. Focus on basic shape and material. Max 15 words"}. Avoid metaphors and poetic language)"), *FirstProductName, *SecondProductName);
+
+    GenerateCombinedItemProps(
+        Prompt,
+        [this](FString GeneratedName, FString GeneratedDescription) {
+            ProductName = GeneratedName;
+            OnRep_ProductName();
+            IncreaseProgress();
+
+            GenerateCombinedItemModels(
+                GeneratedDescription,
+                [](FString ErrorMessage) {
+                    GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, ErrorMessage);
+                }
+            );
+        },
+        [](FString ErrorMessage) {
+            GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, ErrorMessage);
+        }
+    );
 }
 
 void ACombinator::GenerateCombinedItemProps(
@@ -84,7 +176,7 @@ void ACombinator::GenerateCombinedItemProps(
     );
 }
 
-void ACombinator::GenerateCombinedItemModels(const FString& Prompt, TFunction<void(FString)> OnSuccess, TFunction<void(FString)> OnError)
+void ACombinator::GenerateCombinedItemModels(const FString& Prompt, TFunction<void(FString)> OnError)
 {
     if (!GenieApiClient)
     {
@@ -92,135 +184,259 @@ void ACombinator::GenerateCombinedItemModels(const FString& Prompt, TFunction<vo
         return;
     }
 
-    // Send the initial request to generate models.
     GenieApiClient->SendModelsGenerationRequest(
         Prompt,
-        [this, OnSuccess, OnError](const FModelsGenerationResponse& ModelsGenerationResponse)
+        [this, OnError](const FModelsGenerationResponse& Response)
         {
-            if (ModelsGenerationResponse.ModelIds.Num() == 0)
+            if (Response.ModelIds.Num() == 0)
             {
                 OnError(TEXT("No model IDs were returned."));
                 return;
             }
 
-            FString ModelId = ModelsGenerationResponse.ModelIds[0];
-
-            TSharedPtr<TFunction<void()>> PollStatusPtr = MakeShared<TFunction<void()>>();
-            *PollStatusPtr = [this, ModelId, OnSuccess, OnError, PollStatusPtr]()
-                {
-                    GenieApiClient->SendModelsStatusRequest(
-                        ModelId,
-                        [this, ModelId, OnSuccess, OnError, PollStatusPtr](const FModelStatusResponse& ModelStatusResponse)
-                        {
-                            UE_LOG(LogTemp, Log, TEXT("Polled status for model %s: %s. Model url: %s"), *ModelId, *ModelStatusResponse.Status, *ModelStatusResponse.ThumbnailUrl);
-
-                            //if (ModelStatusResponse.Status.Equals(TEXT("completed"), ESearchCase::IgnoreCase))
-                            if (!ModelStatusResponse.ModelUrl.Equals(TEXT("")))
-                            {
-                                OnSuccess(ModelStatusResponse.ModelUrl);
-                            }
-                            else
-                            {
-                                const float PollDelay = 2.0f;
-                                if (GetWorld())
-                                {
-                                    FTimerHandle TimerHandle;
-                                    GetWorld()->GetTimerManager().SetTimer(
-                                        TimerHandle,
-                                        FTimerDelegate::CreateLambda([PollStatusPtr]()
-                                            {
-                                                (*PollStatusPtr)();
-                                            }),
-                                        PollDelay,
-                                        false
-                                    );
-                                }
-                                else
-                                {
-                                    OnError(TEXT("World context is missing for status polling."));
-                                }
-                            }
-                        },
-                        OnError
-                    );
-                };
-
-            // Start polling.
-            (*PollStatusPtr)();
+			for (int32 i = 0; i < Response.ModelIds.Num(); i++)
+			{
+				PollModelStatus(Response.ModelIds[i], MaxPollingAttempts, i, OnError);
+			}
         },
         OnError
     );
 }
 
-void ACombinator::Server_StartCombination_Implementation(const FString& FirstProductName, const FString& SecondProductName)
+void ACombinator::PollModelStatus(const FString& ModelId, int32 AttemptsRemaining, int32 ModelIndex, TFunction<void(FString)> OnError)
 {
-    bIsCombining = true;
+    if (AttemptsRemaining <= 0)
+    {
+        OnError(TEXT("Exceeded maximum polling attempts."));
+        return;
+    }
 
-	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Combining %s & %s"), *FirstProductName, *SecondProductName));
+    GenieApiClient->SendModelsStatusRequest(
+        ModelId,
+        [this, ModelId, AttemptsRemaining, ModelIndex, OnError](const FModelStatusResponse& StatusResponse)
+        {
+            bool bHasThumbnailUrl = !StatusResponse.ThumbnailUrl.IsEmpty();
+			bool bHasModelUrl = !StatusResponse.ModelUrl.IsEmpty();
 
-    FString Prompt = FString::Printf(TEXT(R"(Combine %s & %s into a new item. Return valid JSON:{"name": "Simple Combined Name","desc": "Clear, literal description for 3D modeling. Focus on basic shape and material. Max 15 words"}. Avoid metaphors and poetic language)"), *FirstProductName, *SecondProductName);
+			if (bHasThumbnailUrl && ProductThumbnailUrls[ModelIndex].IsEmpty())
+			{
+				ProductThumbnailUrls[ModelIndex] = StatusResponse.ThumbnailUrl;
+				OnRep_ProductThumbnailUrls();
+			}
 
-    GenerateCombinedItemProps(
-        Prompt,
-        [this](FString GeneratedName, FString GeneratedDescription) {
-            GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Generated Name: %s"), *GeneratedName));
-            GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Generated Description: %s"), *GeneratedDescription));
+			if (bHasModelUrl && ProductModelUrls[ModelIndex].IsEmpty())
+			{
+				ProductModelUrls[ModelIndex] = StatusResponse.ModelUrl;
+			}
 
-            GenerateCombinedItemModels(
-                GeneratedDescription,
-                [this](FString ModelUrl) {
-                    GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Model URL: %s"), *ModelUrl));
-					AsyncTask(ENamedThreads::AnyThread, [this, ModelUrl]()
-                        {
-							AsyncTask(ENamedThreads::GameThread, [this, ModelUrl]()
-                                {
-                                    ModelUrls.Add(ModelUrl);
-                                    OnRep_ModelUrls();
-                                });
-                        });
-                },
-                [](FString ErrorMessage) {
-                    GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, ErrorMessage);
-                }
+            if (bHasThumbnailUrl && bHasModelUrl)
+            {
+                return;
+            }
+
+            if (!GetWorld())
+            {
+                OnError(TEXT("World context is missing for status polling."));
+                return;
+            }
+
+            FTimerHandle TimerHandle;
+            GetWorld()->GetTimerManager().SetTimer(
+                TimerHandle,
+                FTimerDelegate::CreateLambda([this, ModelId, AttemptsRemaining, ModelIndex, OnError]()
+                    {
+                        PollModelStatus(ModelId, AttemptsRemaining - 1, ModelIndex, OnError);
+                    }),
+                PollDelaySeconds,
+                false
             );
         },
-        [](FString ErrorMessage) {
-            GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, ErrorMessage);
-        }
+        OnError
     );
 }
 
-void ACombinator::OnRep_ModelUrls()
+void ACombinator::OnRep_ProductThumbnailUrls()
 {
-	FString ModelUrl = ModelUrls.Last();
+	if (!bIsCombining)
+	{
+		return;
+	}
 
-	TMap<FString, FString> Headers;
-	FglTFRuntimeConfig LoaderConfig;
-	FglTFRuntimeHttpResponse ResponseDelegate;
-	ResponseDelegate.BindDynamic(this, &ACombinator::OnModelDownloaded);
+	for (int32 i = 0; i < ProductThumbnailUrls.Num(); i++)
+	{
+		if (ProductThumbnailUrls[i].IsEmpty() || ProductThumbnails[i] != nullptr)
+		{
+			continue;
+		}
 
-	UglTFRuntimeFunctionLibrary::glTFLoadAssetFromUrl(ModelUrl, Headers, ResponseDelegate, LoaderConfig);
+		ProductThumbnails[i] = UTexture2D::CreateTransient(1, 1);
+		OnProductThumbnailLoaded.Broadcast(i);
+
+        if (GetLocalRole() == ROLE_Authority)
+        {
+            IncreaseProgress();
+        }
+	}
+}
+
+void ACombinator::Server_RequestLoadProduct_Implementation(int32 Index)
+{
+    IncreaseProgress();
+    Multicast_LoadProduct(Index);
+}
+
+void ACombinator::Multicast_LoadProduct_Implementation(int32 Index)
+{
+    SelectedProductIndex = Index;
+	bIsProductSelected = true;
+    TryLoadProduct();
+}
+
+void ACombinator::TryLoadProduct()
+{
+    if (ProductModelUrls[SelectedProductIndex].IsEmpty())
+    {
+        if (!GetWorld())
+        {
+            UE_LOG(LogTemp, Error, TEXT("World context is missing for product loading."));
+            return;
+        }
+
+        FTimerHandle TimerHandle;
+        GetWorld()->GetTimerManager().SetTimer(
+            TimerHandle,
+            this,
+            &ACombinator::TryLoadProduct,
+            0.1f,
+            false
+        );
+
+        return;
+    }
+
+    TMap<FString, FString> Headers;
+    FglTFRuntimeConfig LoaderConfig;
+    FglTFRuntimeHttpResponse Delegate;
+    Delegate.BindDynamic(this, &ACombinator::OnModelDownloaded);
+
+    UglTFRuntimeFunctionLibrary::glTFLoadAssetFromUrl(
+        ProductModelUrls[SelectedProductIndex],
+        Headers,
+        Delegate,
+        LoaderConfig
+    );
+
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		IncreaseProgress();
+	}
 }
 
 void ACombinator::OnModelDownloaded(UglTFRuntimeAsset* Asset)
 {
-	if (Asset == nullptr)
+    if (Asset == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to load model asset"));
+        return;
+    }
+
+    if (GetLocalRole() == ROLE_Authority)
+    {
+        IncreaseProgress();
+    }
+
+    FglTFRuntimeStaticMeshConfig StaticMeshConfig;
+    StaticMeshConfig.bBuildSimpleCollision = true;
+
+    FglTFRuntimeStaticMeshAsync AsyncCallback;
+	AsyncCallback.BindDynamic(this, &ACombinator::OnModelLoaded);
+	Asset->LoadStaticMeshAsync(0, AsyncCallback, StaticMeshConfig);
+}
+
+void ACombinator::OnModelLoaded(UStaticMesh* Mesh)
+{
+	if (Mesh == nullptr)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to load model asset"));
+		UE_LOG(LogTemp, Error, TEXT("Failed to load model"));
 		return;
 	}
 
-	FglTFRuntimeStaticMeshConfig StaticMeshConfig;
-	StaticMeshConfig.bBuildSimpleCollision = true;
+	ProductMesh = Mesh;
 
-	FglTFRuntimeStaticMeshAsync Delegate;
-	Delegate.BindDynamic(this, &ACombinator::OnModelLoaded);
+    if (GetLocalRole() != ROLE_Authority)
+    {
+		TrySetProductMesh();
+        return;
+    }
 
-	Asset->LoadStaticMeshAsync(0, Delegate, StaticMeshConfig);
+    IncreaseProgress();
+
+    if (!GetWorld())
+	{
+		UE_LOG(LogTemp, Error, TEXT("World context is missing for product loading."));
+		return;
+	}
+
+	AGameGameMode* GameMode = Cast<AGameGameMode>(GetWorld()->GetAuthGameMode());
+
+    if (GameMode == nullptr)
+    {
+		UE_LOG(LogTemp, Error, TEXT("Failed to cast GameMode"));
+		return;
+    }
+
+	Product = GameMode->GetProductManager()->SpawnProduct(
+        GetProductSpawnPoint(),
+		FGuid::NewGuid(),
+		ProductName,
+        ProductMesh,
+		ProductThumbnails[SelectedProductIndex]
+    );
+	Product->Mesh->SetStaticMesh(ProductMesh);
+
+    FTimerHandle TimerHandle;
+    GetWorld()->GetTimerManager().SetTimer(
+        TimerHandle,
+        this,
+        &ACombinator::Reset,
+        0.5f,
+        false
+    );
 }
 
-void ACombinator::OnModelLoaded(UStaticMesh* StaticMesh)
+void ACombinator::OnRep_Product()
 {
-	OnCombinationComplete.Broadcast(StaticMesh);
-	bIsCombining = false;
+    if (Product == nullptr)
+    {
+        return;
+    }
+
+    LocalProduct = Product;
+}
+
+void ACombinator::TrySetProductMesh()
+{
+	if (LocalProduct == nullptr)
+	{
+		if (!GetWorld())
+		{
+			UE_LOG(LogTemp, Error, TEXT("World context is missing for product mesh setting."));
+			return;
+		}
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle,
+			this,
+			&ACombinator::TrySetProductMesh,
+			0.1f,
+			false
+		);
+		return;
+	}
+
+	LocalProduct->ProductThumbnail = ProductThumbnails[SelectedProductIndex];
+	LocalProduct->ProductMesh = ProductMesh;
+	LocalProduct->Mesh->SetStaticMesh(ProductMesh);
+
+    Reset();
 }
