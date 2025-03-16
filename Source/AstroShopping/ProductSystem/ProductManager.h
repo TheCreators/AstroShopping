@@ -16,10 +16,12 @@ public:
 	virtual void BeginPlay() override;
 
 	UFUNCTION(BlueprintCallable)
-	class AProduct* SpawnProduct(const FTransform& Transform,
-		const FGuid ID, const FString& Name,
-		const TSoftObjectPtr<UStaticMesh> ProductMesh,
-		const TSoftObjectPtr<UTexture2D> ProductThumbnail
+	class AProduct* SpawnProduct(
+		const FTransform& Transform,
+		const FGuid ID, 
+		const FString& Name,
+		UStaticMesh* ProductMesh,
+		UTexture2D* ProductThumbnail
 	);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)

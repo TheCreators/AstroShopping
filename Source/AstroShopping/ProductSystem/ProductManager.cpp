@@ -13,12 +13,12 @@ void AProductManager::BeginPlay()
 	GetGameInstance()->GetSubsystem<UPersistenceSubsystem>()->RequestLoad(this);
 }
 
-class AProduct* AProductManager::SpawnProduct(
-	const FTransform& Transform, 
-	const FGuid ID, const FString& Name, 
-	const TSoftObjectPtr<UStaticMesh> ProductMesh, 
-	const TSoftObjectPtr<UTexture2D> ProductThumbnail
-)
+class AProduct *AProductManager::SpawnProduct(
+	const FTransform &Transform,
+	const FGuid ID,
+	const FString &Name,
+	UStaticMesh *ProductMesh,
+	UTexture2D *ProductThumbnail)
 {
 	if (!HasAuthority())
 	{
@@ -26,7 +26,7 @@ class AProduct* AProductManager::SpawnProduct(
 		return nullptr;
 	}
 
-	UWorld* World = GetWorld();
+	UWorld *World = GetWorld();
 
 	if (!GetWorld())
 	{
@@ -39,14 +39,13 @@ class AProduct* AProductManager::SpawnProduct(
 		return nullptr;
 	}
 
-	AProduct* Product = GetWorld()->SpawnActorDeferred<AProduct>(
-		ProductClass, 
-		Transform, 
+	AProduct *Product = GetWorld()->SpawnActorDeferred<AProduct>(
+		ProductClass,
+		Transform,
 		this,
 		nullptr,
-		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn
-	);
-	
+		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+
 	Product->ID = ID;
 	Product->Name = Name;
 	Product->ProductMesh = ProductMesh;
@@ -58,25 +57,26 @@ class AProduct* AProductManager::SpawnProduct(
 	return Product;
 }
 
-void AProductManager::SaveData_Implementation(UAstroShoppingSaveGame* CurrentGameSave)
+void AProductManager::SaveData_Implementation(UAstroShoppingSaveGame *CurrentGameSave)
 {
 	TMap<FGuid, FProductSaveData> ProductSaveData;
 
-	for (auto& Product : Products)
+	for (auto &Product : Products)
 	{
 		FProductSaveData SaveData;
 		SaveData.Name = Product.Value->Name;
 		SaveData.Transform = Product.Value->Mesh->GetComponentTransform();
+		SaveData.Mesh = Product.Value->ProductMesh.Get();
 		ProductSaveData.Add(Product.Key, SaveData);
 	}
 
 	CurrentGameSave->Products = ProductSaveData;
 }
 
-void AProductManager::LoadData_Implementation(UAstroShoppingSaveGame* CurrentGameSave)
+void AProductManager::LoadData_Implementation(UAstroShoppingSaveGame *CurrentGameSave)
 {
-	for (auto& Product : CurrentGameSave->Products)
+	for (auto &Product : CurrentGameSave->Products)
 	{
-		SpawnProduct(Product.Value.Transform, Product.Key, Product.Value.Name, nullptr, nullptr);
+		SpawnProduct(Product.Value.Transform, Product.Key, Product.Value.Name, Product.Value.Mesh, nullptr);
 	}
 }
