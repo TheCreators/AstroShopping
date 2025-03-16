@@ -52,6 +52,9 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_ProductName, BlueprintReadOnly, Category = "Product")
 	FString ProductName;
 
+	UPROPERTY(ReplicatedUsing = OnRep_ProductThumbnailUrls, BlueprintReadOnly, Category = "Product")
+	TArray<FString> ProductThumbnailUrls;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Product")
 	TArray<UTexture2D*> ProductThumbnails;
 
@@ -94,9 +97,6 @@ private:
 
 	UPROPERTY(Replicated)
 	TArray<FString> ProductModelUrls;
-
-	UPROPERTY(ReplicatedUsing = OnRep_ProductThumbnailUrls)
-	TArray<FString> ProductThumbnailUrls;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Product)
 	TObjectPtr<class AProduct> Product;
