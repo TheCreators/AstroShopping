@@ -66,7 +66,6 @@ void AProductManager::SaveData_Implementation(UAstroShoppingSaveGame *CurrentGam
 		FProductSaveData SaveData;
 		SaveData.Name = Product.Value->Name;
 		SaveData.Transform = Product.Value->Mesh->GetComponentTransform();
-		SaveData.Mesh = Product.Value->ProductMesh.Get();
 		ProductSaveData.Add(Product.Key, SaveData);
 	}
 
@@ -77,6 +76,6 @@ void AProductManager::LoadData_Implementation(UAstroShoppingSaveGame *CurrentGam
 {
 	for (auto &Product : CurrentGameSave->Products)
 	{
-		SpawnProduct(Product.Value.Transform, Product.Key, Product.Value.Name, Product.Value.Mesh, nullptr);
+		SpawnProduct(Product.Value.Transform, Product.Key, Product.Value.Name, nullptr, nullptr);
 	}
 }
