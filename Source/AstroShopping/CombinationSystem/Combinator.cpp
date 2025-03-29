@@ -13,82 +13,65 @@
 
 ACombinator::ACombinator()
 {
-	srand(static_cast<unsigned int>(time(0)));
+    srand(static_cast<unsigned int>(time(0)));
 
-	PrimaryActorTick.bCanEverTick = false;
-	bReplicates = true;
+    PrimaryActorTick.bCanEverTick = false;
+    bReplicates = true;
 
-    MaxProgress = 9;
-	Progress = 0;
+    MaxProgress = 8;
     MaxPollingAttempts = 32;
     PollDelaySeconds = 2.0f;
 }
 
 void ACombinator::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-	UAstroShoppingUserSettings* UserSettings = UAstroShoppingUserSettings::GetAstroShoppingUserSettings();
+    UAstroShoppingUserSettings* UserSettings = UAstroShoppingUserSettings::GetAstroShoppingUserSettings();
 
-	LlmApiClient = MakeUnique<FLlmApiClient>(
-		UserSettings->GetProxyApiKey(),
-		TEXT("https://api.proxyapi.ru/google/v1/models/gemini-2.0-flash:generateContent")
-	);
+    LlmApiClient = MakeUnique<FLlmApiClient>(
+        UserSettings->GetProxyApiKey(),
+        TEXT("https://api.proxyapi.ru/google/v1/models/gemini-2.0-flash:generateContent")
+    );
 
-	GenieApiClient = MakeUnique<FGenieApiClient>(
-		UserSettings->GetGenieRefreshToken()
-	);
+    GenieApiClient = MakeUnique<FGenieApiClient>(
+        UserSettings->GetGenieRefreshToken()
+    );
 
     Reset();
 }
 
 void ACombinator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(ACombinator, ProductModelUrls);
-	DOREPLIFETIME(ACombinator, ProductThumbnailUrls);
-	DOREPLIFETIME(ACombinator, bIsCombining);
-	DOREPLIFETIME(ACombinator, Progress);
-	DOREPLIFETIME(ACombinator, ProductName);
-	DOREPLIFETIME(ACombinator, Product);
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    DOREPLIFETIME(ACombinator, Progress);
+    DOREPLIFETIME(ACombinator, ProductName);
+    DOREPLIFETIME(ACombinator, SelectedProductIndex);
+    DOREPLIFETIME(ACombinator, ProductThumbnailUrls);
 }
 
 void ACombinator::Reset()
 {
-	ProductThumbnails.Empty();
-    ProductThumbnails.SetNumZeroed(4);
+    ProductModelUrls.Empty();
+    ProductModelUrls.SetNumZeroed(4);
 
-	bIsProductSelected = false;
+    SelectedProductIndex = -1;
+	OnRep_SelectedProductIndex();
 
-	LocalProduct = nullptr;
+    Progress = 0;
+    OnRep_Progress();
 
-	ProductMesh = nullptr;
+    ProductName.Reset();
+    OnRep_ProductName();
 
-	SelectedProductIndex = -1;
-	
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, TEXT("Combinator reset from Server"));
+    ProductThumbnailUrls.Empty();
+    ProductThumbnailUrls.SetNumZeroed(4);
+    OnRep_ProductThumbnailUrls();
+}
 
-		bIsCombining = false;
-
-        Progress = 0;
-		OnRep_Progress();
-
-		ProductName.Reset();
-		OnRep_ProductName();
-
-		ProductModelUrls.Empty();
-        ProductModelUrls.SetNumZeroed(4);
-
-		ProductThumbnailUrls.Empty();
-        ProductThumbnailUrls.SetNumZeroed(4);
-        OnRep_ProductThumbnailUrls();
-
-		Product = nullptr;
-	}
-
-    OnCombinatorReset.Broadcast();
+bool ACombinator::IsWorking() const
+{
+    return Progress > 0;
 }
 
 void ACombinator::IncreaseProgress()
@@ -97,17 +80,11 @@ void ACombinator::IncreaseProgress()
     OnRep_Progress();
 }
 
-void ACombinator::ResetProgress()
-{
-    Progress = 0;
-    OnRep_Progress();
-}
-
 void ACombinator::Server_StartCombination_Implementation(const FString& FirstProductName, const FString& SecondProductName)
 {
-    bIsCombining = true;
+    IncreaseProgress();
 
-    GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Combining %s & %s"), *FirstProductName, *SecondProductName));
+    UE_LOG(LogTemp, Display, TEXT("Combining %s & %s"), *FirstProductName, *SecondProductName);
 
     FString Prompt = FString::Printf(TEXT(R"(Combine %s & %s into a new item. Return valid JSON:{"name": "Simple Combined Name","desc": "Clear, literal description for 3D modeling. Focus on basic shape and material. Max 15 words"}. Avoid metaphors and poetic language)"), *FirstProductName, *SecondProductName);
 
@@ -121,12 +98,12 @@ void ACombinator::Server_StartCombination_Implementation(const FString& FirstPro
             GenerateCombinedItemModels(
                 GeneratedDescription,
                 [](FString ErrorMessage) {
-                    GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, ErrorMessage);
+                    UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMessage);
                 }
             );
         },
         [](FString ErrorMessage) {
-            GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, ErrorMessage);
+            UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMessage);
         }
     );
 }
@@ -194,10 +171,10 @@ void ACombinator::GenerateCombinedItemModels(const FString& Prompt, TFunction<vo
                 return;
             }
 
-			for (int32 i = 0; i < Response.ModelIds.Num(); i++)
-			{
-				PollModelStatus(Response.ModelIds[i], MaxPollingAttempts, i, OnError);
-			}
+            for (int32 i = 0; i < Response.ModelIds.Num(); i++)
+            {
+                PollModelStatus(Response.ModelIds[i], MaxPollingAttempts, i, OnError);
+            }
         },
         OnError
     );
@@ -205,6 +182,11 @@ void ACombinator::GenerateCombinedItemModels(const FString& Prompt, TFunction<vo
 
 void ACombinator::PollModelStatus(const FString& ModelId, int32 AttemptsRemaining, int32 ModelIndex, TFunction<void(FString)> OnError)
 {
+    if (!IsWorking())
+	{
+		return;
+	}
+
     if (AttemptsRemaining <= 0)
     {
         OnError(TEXT("Exceeded maximum polling attempts."));
@@ -216,18 +198,23 @@ void ACombinator::PollModelStatus(const FString& ModelId, int32 AttemptsRemainin
         [this, ModelId, AttemptsRemaining, ModelIndex, OnError](const FModelStatusResponse& StatusResponse)
         {
             bool bHasThumbnailUrl = !StatusResponse.ThumbnailUrl.IsEmpty();
-			bool bHasModelUrl = !StatusResponse.ModelUrl.IsEmpty();
+            bool bHasModelUrl = !StatusResponse.ModelUrl.IsEmpty();
 
-			if (bHasThumbnailUrl && ProductThumbnailUrls[ModelIndex].IsEmpty())
-			{
-				ProductThumbnailUrls[ModelIndex] = StatusResponse.ThumbnailUrl;
-				OnRep_ProductThumbnailUrls();
-			}
+            if (bHasThumbnailUrl && ProductThumbnailUrls[ModelIndex].IsEmpty())
+            {
+                ProductThumbnailUrls[ModelIndex] = StatusResponse.ThumbnailUrl;
+                OnRep_ProductThumbnailUrls();
+                IncreaseProgress();
+            }
 
-			if (bHasModelUrl && ProductModelUrls[ModelIndex].IsEmpty())
-			{
-				ProductModelUrls[ModelIndex] = StatusResponse.ModelUrl;
-			}
+            if (bHasModelUrl && ProductModelUrls[ModelIndex].IsEmpty())
+            {
+                ProductModelUrls[ModelIndex] = StatusResponse.ModelUrl;
+                if (SelectedProductIndex == ModelIndex)
+                {
+                    GotSelectedProductModelUrl.ExecuteIfBound();
+                }
+            }
 
             if (bHasThumbnailUrl && bHasModelUrl)
             {
@@ -255,188 +242,49 @@ void ACombinator::PollModelStatus(const FString& ModelId, int32 AttemptsRemainin
     );
 }
 
-void ACombinator::OnRep_ProductThumbnailUrls()
-{
-	if (!bIsCombining)
-	{
-		return;
-	}
-
-	for (int32 i = 0; i < ProductThumbnailUrls.Num(); i++)
-	{
-		if (ProductThumbnailUrls[i].IsEmpty() || ProductThumbnails[i] != nullptr)
-		{
-			continue;
-		}
-
-		ProductThumbnails[i] = UTexture2D::CreateTransient(1, 1);
-		OnProductThumbnailLoaded.Broadcast(i);
-
-        if (GetLocalRole() == ROLE_Authority)
-        {
-            IncreaseProgress();
-        }
-	}
-}
-
 void ACombinator::Server_RequestLoadProduct_Implementation(int32 Index)
 {
     IncreaseProgress();
-    Multicast_LoadProduct(Index);
-}
 
-void ACombinator::Multicast_LoadProduct_Implementation(int32 Index)
-{
     SelectedProductIndex = Index;
-	bIsProductSelected = true;
-    TryLoadProduct();
-}
-
-void ACombinator::TryLoadProduct()
-{
-    if (ProductModelUrls[SelectedProductIndex].IsEmpty())
-    {
-        if (!GetWorld())
-        {
-            UE_LOG(LogTemp, Error, TEXT("World context is missing for product loading."));
-            return;
-        }
-
-        FTimerHandle TimerHandle;
-        GetWorld()->GetTimerManager().SetTimer(
-            TimerHandle,
-            this,
-            &ACombinator::TryLoadProduct,
-            0.1f,
-            false
-        );
-
-        return;
-    }
-
-    TMap<FString, FString> Headers;
-    FglTFRuntimeConfig LoaderConfig;
-    FglTFRuntimeHttpResponse Delegate;
-    Delegate.BindDynamic(this, &ACombinator::OnModelDownloaded);
-
-    UglTFRuntimeFunctionLibrary::glTFLoadAssetFromUrl(
-        ProductModelUrls[SelectedProductIndex],
-        Headers,
-        Delegate,
-        LoaderConfig
-    );
-
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		IncreaseProgress();
-	}
-}
-
-void ACombinator::OnModelDownloaded(UglTFRuntimeAsset* Asset)
-{
-    if (Asset == nullptr)
-    {
-        UE_LOG(LogTemp, Error, TEXT("Failed to load model asset"));
-        return;
-    }
-
-    if (GetLocalRole() == ROLE_Authority)
-    {
-        IncreaseProgress();
-    }
-
-    FglTFRuntimeStaticMeshConfig StaticMeshConfig;
-    StaticMeshConfig.bBuildSimpleCollision = true;
-
-    FglTFRuntimeStaticMeshAsync AsyncCallback;
-	AsyncCallback.BindDynamic(this, &ACombinator::OnModelLoaded);
-	Asset->LoadStaticMeshAsync(0, AsyncCallback, StaticMeshConfig);
-}
-
-void ACombinator::OnModelLoaded(UStaticMesh* Mesh)
-{
-	if (Mesh == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to load model"));
-		return;
-	}
-
-	ProductMesh = Mesh;
-
-    if (GetLocalRole() != ROLE_Authority)
-    {
-		TrySetProductMesh();
-        return;
-    }
-
-    IncreaseProgress();
+	OnRep_SelectedProductIndex();
 
     if (!GetWorld())
-	{
-		UE_LOG(LogTemp, Error, TEXT("World context is missing for product loading."));
-		return;
-	}
+    {
+        UE_LOG(LogTemp, Error, TEXT("World context is missing for product loading."));
+        return;
+    }
 
-	AGameGameMode* GameMode = Cast<AGameGameMode>(GetWorld()->GetAuthGameMode());
+    AGameGameMode* GameMode = Cast<AGameGameMode>(GetWorld()->GetAuthGameMode());
 
     if (GameMode == nullptr)
     {
-		UE_LOG(LogTemp, Error, TEXT("Failed to cast GameMode"));
-		return;
-    }
-
-	Product = GameMode->GetProductManager()->SpawnProduct(
-        GetProductSpawnPoint(),
-		FGuid::NewGuid(),
-		ProductName,
-        ProductMesh,
-		ProductThumbnails[SelectedProductIndex]
-    );
-	Product->Mesh->SetStaticMesh(ProductMesh);
-
-    FTimerHandle TimerHandle;
-    GetWorld()->GetTimerManager().SetTimer(
-        TimerHandle,
-        this,
-        &ACombinator::Reset,
-        0.5f,
-        false
-    );
-}
-
-void ACombinator::OnRep_Product()
-{
-    if (Product == nullptr)
-    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to cast GameMode"));
         return;
     }
 
-    LocalProduct = Product;
-}
+    GotSelectedProductModelUrl.BindLambda([this, GameMode]()
+        {
+            IncreaseProgress();
 
-void ACombinator::TrySetProductMesh()
-{
-	if (LocalProduct == nullptr)
-	{
-		if (!GetWorld())
-		{
-			UE_LOG(LogTemp, Error, TEXT("World context is missing for product mesh setting."));
-			return;
-		}
-		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(
-			TimerHandle,
-			this,
-			&ACombinator::TrySetProductMesh,
-			0.1f,
-			false
-		);
-		return;
-	}
+            GameMode->GetProductManager()->RequestNewProductSpawn(
+                { ProductName, 100, ProductModelUrls[SelectedProductIndex] },
+                FGuid::NewGuid(),
+                GetProductSpawnPoint()
+            );
 
-	LocalProduct->ProductThumbnail = ProductThumbnails[SelectedProductIndex];
-	LocalProduct->ProductMesh = ProductMesh;
-	LocalProduct->Mesh->SetStaticMesh(ProductMesh);
+            FTimerHandle TimerHandle;
+            GetWorld()->GetTimerManager().SetTimer(
+                TimerHandle,
+                this,
+                &ACombinator::Reset,
+                5.0f,
+                false
+            );
+        });
 
-    Reset();
+    if (!ProductModelUrls[SelectedProductIndex].IsEmpty())
+    {
+		GotSelectedProductModelUrl.ExecuteIfBound();
+    }
 }
