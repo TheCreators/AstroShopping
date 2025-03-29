@@ -1,16 +1,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ProductSaveData.generated.h"
+#include "ProductDataSaveData.generated.h"
 
 USTRUCT(BlueprintType)
-struct FProductSaveData
+struct FProductDataSaveData
 {
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite)
-	FTransform Transform;
+	FString Name;
 
 	UPROPERTY(BlueprintReadWrite)
-	FGuid ProductDataID;
+	int32 Price;
+
+	UPROPERTY(BlueprintReadWrite)
+	FString MeshURL;
 };

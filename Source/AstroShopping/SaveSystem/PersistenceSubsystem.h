@@ -5,7 +5,9 @@
 #include "PersistenceSubsystem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSaveGameCompleteDelegate, UAstroShoppingSaveGame*, CurrentGameSave);
+DECLARE_MULTICAST_DELEGATE_OneParam(FSaveGameCompleteDelegateNative, UAstroShoppingSaveGame*);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLoadGameCompleteDelegate, UAstroShoppingSaveGame*, CurrentGameSave);
+DECLARE_MULTICAST_DELEGATE_OneParam(FLoadGameCompleteDelegateNative, UAstroShoppingSaveGame*);
 
 UCLASS()
 class ASTROSHOPPING_API UPersistenceSubsystem : public UGameInstanceSubsystem
@@ -31,8 +33,12 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FSaveGameCompleteDelegate OnGameSaved;
 
+	FSaveGameCompleteDelegateNative OnGameSavedNative;
+
 	UPROPERTY(BlueprintAssignable)
 	FLoadGameCompleteDelegate OnGameLoaded;
+
+	FLoadGameCompleteDelegateNative OnGameLoadedNative;
 	
 private:
 	void WriteGameSaveToDisk(bool bAsync);
