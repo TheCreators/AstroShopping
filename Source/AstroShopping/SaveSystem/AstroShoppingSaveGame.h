@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
 #include "Structures/ProductSaveData.h"
+#include "Structures/ProductDataSaveData.h"
 #include "AstroShoppingSaveGame.generated.h"
 
 UCLASS()
@@ -17,4 +18,7 @@ public:
 
 	UPROPERTY()
 	TMap<FGuid, FProductSaveData> Products;
+
+	UPROPERTY()
+	TMap<FGuid, FProductDataSaveData> ProductData;
 };
