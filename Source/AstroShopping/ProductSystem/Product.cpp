@@ -5,15 +5,13 @@ AProduct::AProduct()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
-
-	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneRoot"));
-	SetRootComponent(Root);
+	SetReplicateMovement(true);
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(RootComponent);
 	Mesh->SetSimulatePhysics(true);
 	Mesh->SetCollisionProfileName(TEXT("Interactable"));
-	Mesh->SetIsReplicated(true);
+	SetRootComponent(Mesh);
 
 	Price = FMath::RandRange(50, 200);
 }
@@ -23,6 +21,7 @@ void AProduct::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AProduct, Name);
 	DOREPLIFETIME(AProduct, ID);
+	DOREPLIFETIME(AProduct, ProductDataID);
 }
 
 void AProduct::BeginPlay()
