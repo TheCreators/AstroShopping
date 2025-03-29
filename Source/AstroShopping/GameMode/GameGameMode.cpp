@@ -8,6 +8,32 @@ void AGameGameMode::InitGame(const FString& MapName, const FString& Options, FSt
 	SpawnProductManager();
 }
 
+void AGameGameMode::PostLogin(APlayerController* NewPlayer)
+{
+    Super::PostLogin(NewPlayer);
+
+    int32 CurrentPlayers = GetNumPlayers();
+    UE_LOG(LogTemp, Display, TEXT("Player joined. Current: %d, Expected: %d"), CurrentPlayers, ExpectedNumberOfPlayers);
+
+    if (CurrentPlayers == ExpectedNumberOfPlayers)
+    {
+        FTimerHandle Handle;
+        GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([this]()
+            {
+                UE_LOG(LogTemp, Display, TEXT("All players joined"));
+                OnAllPlayersJoined.Broadcast();
+                OnAllPlayersJoinedNative.Broadcast();
+            }), 1.0f, false);
+    }
+}
+
+void AGameGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	ExpectedNumberOfPlayers = GetNumPlayers();
+}
+
 AProductManager* AGameGameMode::GetProductManager() const
 {
 	return ProductManager;
