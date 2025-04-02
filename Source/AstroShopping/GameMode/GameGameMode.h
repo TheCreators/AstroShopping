@@ -21,9 +21,6 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<class AProductManager> ProductManagerClass;
 
-	UPROPERTY(EditDefaultsOnly)
-	int32 ExpectedNumberOfPlayers = 1;
-
 	UPROPERTY(BlueprintAssignable)
 	FAllPlayersJoined OnAllPlayersJoined;
 
@@ -38,4 +35,6 @@ private:
 	void SpawnProductManager();
 
 	TObjectPtr<class AProductManager> ProductManager;
+
+	int32 ExpectedNumberOfPlayers;
 };
