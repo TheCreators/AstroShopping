@@ -20,7 +20,8 @@ void ALobbyGameMode::StartGame()
 
 	int32 NumberOfPlayer = GameState.Get()->PlayerArray.Num();
 
-	World->ServerTravel(TEXT("/Game/AstroShopping/Maps/" + GameLevelName + "?listen?players=" + FString::FromInt(NumberOfPlayer)));
+	FString TravelURL = FString::Printf(TEXT("/Game/AstroShopping/Maps/%s?listen?players=%d"), *GameLevelName, NumberOfPlayer);
+	World->ServerTravel(*TravelURL);
 }
 
 bool ALobbyGameMode::HasLoadingPlayers() const
