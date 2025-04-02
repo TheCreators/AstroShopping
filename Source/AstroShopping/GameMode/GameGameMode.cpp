@@ -12,6 +12,8 @@ void AGameGameMode::InitGame(const FString& MapName, const FString& Options, FSt
 		return;
 	}
 
+	ExpectedNumberOfPlayers = 1;
+
 	for (const FString& Option : World->URL.Op)
 	{
 		if (Option.StartsWith("players="))
@@ -24,23 +26,23 @@ void AGameGameMode::InitGame(const FString& MapName, const FString& Options, FSt
 	SpawnProductManager();
 }
 
-void AGameGameMode::PostLogin(APlayerController* NewPlayer)
+void AGameGameMode::GenericPlayerInitialization(AController* Controller)
 {
-    Super::PostLogin(NewPlayer);
+	Super::GenericPlayerInitialization(Controller);
 
-    int32 CurrentPlayers = GetNumPlayers();
-    UE_LOG(LogTemp, Display, TEXT("Player joined. Current: %d, Expected: %d"), CurrentPlayers, ExpectedNumberOfPlayers);
+	int32 CurrentPlayers = GetNumPlayers();
+	UE_LOG(LogTemp, Display, TEXT("Player joined. Current: %d, Expected: %d"), CurrentPlayers, ExpectedNumberOfPlayers);
 
-    if (CurrentPlayers == ExpectedNumberOfPlayers)
-    {
-        FTimerHandle Handle;
-        GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([this]()
-            {
-                UE_LOG(LogTemp, Display, TEXT("All players joined"));
-                OnAllPlayersJoined.Broadcast();
-                OnAllPlayersJoinedNative.Broadcast();
-            }), 1.0f, false);
-    }
+	if (CurrentPlayers == ExpectedNumberOfPlayers)
+	{
+		FTimerHandle Handle;
+		GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([this]()
+			{
+				UE_LOG(LogTemp, Display, TEXT("All players joined"));
+				OnAllPlayersJoined.Broadcast();
+				OnAllPlayersJoinedNative.Broadcast();
+			}), 1.0f, false);
+	}
 }
 
 void AGameGameMode::Logout(AController* Exiting)
