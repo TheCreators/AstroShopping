@@ -5,6 +5,22 @@ void AGameGameMode::InitGame(const FString& MapName, const FString& Options, FSt
 {
 	Super::InitGame(MapName, Options, ErrorMessage);
 
+	UWorld* World = GetWorld();
+
+	if (!World)
+	{
+		return;
+	}
+
+	for (const FString& Option : World->URL.Op)
+	{
+		if (Option.StartsWith("players="))
+		{
+			ExpectedNumberOfPlayers = FCString::Atoi(*Option.RightChop(8));
+			break;
+		}
+	}
+
 	SpawnProductManager();
 }
 
