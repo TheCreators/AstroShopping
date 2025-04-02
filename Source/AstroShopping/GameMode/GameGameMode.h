@@ -27,7 +27,7 @@ public:
 	FAllPlayersJoinedNative OnAllPlayersJoinedNative;
 
 private:
-	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void GenericPlayerInitialization(AController* Controller) override;
 
 	virtual void Logout(AController* Exiting) override;
 
