@@ -6,8 +6,7 @@
 #include "AstroShopping/AI/GenieApiClient.h"
 #include "Combinator.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FProductThumbnailLoaded, int32, Index);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FReseted);
+DECLARE_DELEGATE(FGotSelectedProductModelUrl)
 
 UCLASS()
 class ASTROSHOPPING_API ACombinator : public AActor
@@ -28,20 +27,20 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnRep_ProductName();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnRep_SelectedProductIndex();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnRep_ProductThumbnailUrls();
+
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Combination")
 	void Server_RequestLoadProduct(int32 Index);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	FTransform GetProductSpawnPoint() const;
 
-	UPROPERTY(BlueprintAssignable, Category = "Combination")
-	FReseted OnCombinatorReset;
-
-	UPROPERTY(BlueprintAssignable, Category = "Combination")
-	FProductThumbnailLoaded OnProductThumbnailLoaded;
-
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Combination")
-	bool bIsCombining;
+	UFUNCTION(BlueprintPure, Category = "Combination")
+	bool IsWorking() const;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Progress")
 	int32 MaxProgress;
@@ -55,22 +54,13 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_ProductThumbnailUrls, BlueprintReadOnly, Category = "Product")
 	TArray<FString> ProductThumbnailUrls;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Product")
-	TArray<UTexture2D*> ProductThumbnails;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Product")
-	bool bIsProductSelected;
+	UPROPERTY(ReplicatedUsing = OnRep_SelectedProductIndex, BlueprintReadOnly, Category = "Product")
+	int32 SelectedProductIndex;
 
 private:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void Reset();
-
-	UFUNCTION()
-	void OnModelDownloaded(UglTFRuntimeAsset* Asset);
-
-	UFUNCTION()
-	void OnModelLoaded(UStaticMesh* Mesh);
 
 	void GenerateCombinedItemProps(const FString& InputText, TFunction<void(FString, FString)> OnSuccess, TFunction<void(FString)> OnError);
 
@@ -80,32 +70,12 @@ private:
 
 	void IncreaseProgress();
 
-	void ResetProgress();
+	FGotSelectedProductModelUrl GotSelectedProductModelUrl;
 
-	void TryLoadProduct();
-
-	void TrySetProductMesh();
-
-	UFUNCTION()
-	void OnRep_ProductThumbnailUrls();
-
-	UFUNCTION()
-	void OnRep_Product();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_LoadProduct(int32 Index);
-
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	TArray<FString> ProductModelUrls;
 
-	UPROPERTY(ReplicatedUsing = OnRep_Product)
-	TObjectPtr<class AProduct> Product;
-
-	TObjectPtr<class AProduct> LocalProduct;
-
-	TObjectPtr<UStaticMesh> ProductMesh;
-
-	int32 SelectedProductIndex;
+	TArray<bool> ProductThumbnailLoaded;
 
 	TUniquePtr<FLlmApiClient> LlmApiClient;
 

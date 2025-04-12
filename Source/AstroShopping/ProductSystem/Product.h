@@ -22,6 +22,9 @@ public:
 	FGuid ID;
 
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = true))
+	FGuid ProductDataID;
+
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = true))
 	FString Name;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = true))

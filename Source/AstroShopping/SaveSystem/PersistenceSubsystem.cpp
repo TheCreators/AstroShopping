@@ -25,6 +25,7 @@ void UPersistenceSubsystem::LoadGameSaveFromDisk(bool bAsync)
 				if (CurrentGameSave != nullptr)
 				{
 					OnGameLoaded.Broadcast(CurrentGameSave);
+					OnGameLoadedNative.Broadcast(CurrentGameSave);
 				}
 			});
 		UGameplayStatics::AsyncLoadGameFromSlot(SlotName, 0, LoadedDelegate);
@@ -35,6 +36,7 @@ void UPersistenceSubsystem::LoadGameSaveFromDisk(bool bAsync)
 		if (CurrentGameSave != nullptr)
 		{
 			OnGameLoaded.Broadcast(CurrentGameSave);
+			OnGameLoadedNative.Broadcast(CurrentGameSave);
 		}
 	}
 }
@@ -101,6 +103,7 @@ void UPersistenceSubsystem::WriteGameSaveToDisk(bool bAsync)
 				if (bSuccess)
 				{
 					OnGameSaved.Broadcast(CurrentGameSave);
+					OnGameSavedNative.Broadcast(CurrentGameSave);
 				}
 			});
 		UGameplayStatics::AsyncSaveGameToSlot(CurrentGameSave, SlotName, 0, SavedDelegate);
@@ -109,5 +112,6 @@ void UPersistenceSubsystem::WriteGameSaveToDisk(bool bAsync)
 	{
 		UGameplayStatics::SaveGameToSlot(CurrentGameSave, SlotName, 0);
 		OnGameSaved.Broadcast(CurrentGameSave);
+		OnGameSavedNative.Broadcast(CurrentGameSave);
 	}
 }

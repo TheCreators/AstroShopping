@@ -4,6 +4,9 @@
 #include "GameFramework/GameModeBase.h"
 #include "GameGameMode.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAllPlayersJoined);
+DECLARE_MULTICAST_DELEGATE(FAllPlayersJoinedNative);
+
 UCLASS()
 class ASTROSHOPPING_API AGameGameMode : public AGameModeBase
 {
@@ -18,9 +21,20 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<class AProductManager> ProductManagerClass;
 
+	UPROPERTY(BlueprintAssignable)
+	FAllPlayersJoined OnAllPlayersJoined;
+
+	FAllPlayersJoinedNative OnAllPlayersJoinedNative;
+
 private:
+	virtual void GenericPlayerInitialization(AController* Controller) override;
+
+	virtual void Logout(AController* Exiting) override;
+
 	UFUNCTION()
 	void SpawnProductManager();
 
 	TObjectPtr<class AProductManager> ProductManager;
+
+	int32 ExpectedNumberOfPlayers;
 };

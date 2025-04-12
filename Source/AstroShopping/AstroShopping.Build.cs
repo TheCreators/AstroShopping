@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using UnrealBuildTool.Rules;
 
 public class AstroShopping : ModuleRules
 {
@@ -8,6 +9,6 @@ public class AstroShopping : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "glTFRuntime", "HTTP", "Json", "JsonUtilities", "WebBrowser" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "glTFRuntime", "HTTP", "Json", "JsonUtilities", "WebBrowser", "AIModule", "NavigationSystem" });
 	}
 }
