@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
 #include "Structures/ProductSaveData.h"
+#include "Structures/StoreStatsSaveData.h"
 #include "Structures/ProductDataSaveData.h"
 #include "AstroShoppingSaveGame.generated.h"
 
@@ -18,6 +19,9 @@ public:
 
 	UPROPERTY()
 	TMap<FGuid, FProductSaveData> Products;
+
+	UPROPERTY(BlueprintReadWrite)
+	FStoreStatsSaveData StoreStats;
 
 	UPROPERTY()
 	TMap<FGuid, FProductDataSaveData> ProductData;
