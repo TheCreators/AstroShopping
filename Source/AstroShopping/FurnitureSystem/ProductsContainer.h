@@ -22,8 +22,8 @@ public:
 	bool HasProducts() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "ProductContainer")
-	TArray<TObjectPtr<AProduct>> GetProducts() const;
+	TArray<AProduct*> GetProducts() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "ProductContainer")
-	TObjectPtr<AProduct> TakeProduct(const FGuid& ProductID);
+	AProduct* TakeProduct(const FGuid& ProductID);
 };
