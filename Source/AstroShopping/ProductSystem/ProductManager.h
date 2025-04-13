@@ -43,6 +43,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<class AProduct> ProductClass;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TMap<FGuid, FProductDataSaveData> ProductData;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TMap<FGuid, UStaticMesh*> ProductDataMeshes;
+
 private:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -74,12 +80,6 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_Products)
 	TArray<TWeakObjectPtr<class AProduct>> Products;
-
-	UPROPERTY()
-	TMap<FGuid, FProductDataSaveData> ProductData;
-
-	UPROPERTY()
-	TMap<FGuid, UStaticMesh*> ProductDataMeshes;
 
 	int32 NumberOfClientsFinishedLoadingProductDataMesh;
 
