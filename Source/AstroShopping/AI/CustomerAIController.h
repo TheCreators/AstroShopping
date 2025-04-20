@@ -12,6 +12,12 @@ class ASTROSHOPPING_API ACustomerAIController : public AAIController
 public:
 	ACustomerAIController();
 
+	void TakeProduct(class AProduct* Product);
+
+	AProduct* PutProduct();
+
+	bool HasProducts() const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -29,4 +35,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = true))
 	FName ShelfsLeftKeyName = TEXT("ShelfsLeft");
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TArray<class AProduct*> Products;
 };
