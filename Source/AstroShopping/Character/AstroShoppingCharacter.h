@@ -16,6 +16,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	class UInteractionComponent* InteractionComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	class UCameraComponent* FirstPersonCameraComponent;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -28,9 +31,6 @@ protected:
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Mesh")
 	USkeletalMeshComponent* Mesh1P;
-
-	UPROPERTY(VisibleAnywhere, Category = "Camera")
-	class UCameraComponent* FirstPersonCameraComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	class UInputMappingContext* DefaultMappingContext;
