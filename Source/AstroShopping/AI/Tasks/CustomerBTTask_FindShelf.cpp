@@ -38,6 +38,13 @@ EBTNodeResult::Type UCustomerBTTask_FindShelf::ExecuteTask(UBehaviorTreeComponen
 	FVector Location = IProductsContainer::Execute_GetInteractionLocation(RandomProductContainer);
 
 	AAIController* AIController = OwnerComp.GetAIOwner();
+
+	if (!AIController)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AIController is not valid!"));
+		return EBTNodeResult::Failed;
+	}
+
 	AIController->GetBlackboardComponent()->SetValueAsVector(ShelfLocationKey.SelectedKeyName, Location);
 	AIController->GetBlackboardComponent()->SetValueAsObject(ShelfActorKey.SelectedKeyName, RandomProductContainer);
 
@@ -47,5 +54,5 @@ EBTNodeResult::Type UCustomerBTTask_FindShelf::ExecuteTask(UBehaviorTreeComponen
 
 FString UCustomerBTTask_FindShelf::GetStaticDescription() const
 {
-	return FString::Printf(TEXT("Shelf Location: %s, Shelf Actor: %s"), *ShelfLocationKey.SelectedKeyName.ToString(), *ShelfActorKey.SelectedKeyName.ToString());
+	return FString::Printf(TEXT("Shelf Location: %s\nShelf Actor: %s"), *ShelfLocationKey.SelectedKeyName.ToString(), *ShelfActorKey.SelectedKeyName.ToString());
 }

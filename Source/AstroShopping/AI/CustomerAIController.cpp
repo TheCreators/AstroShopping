@@ -30,3 +30,24 @@ void ACustomerAIController::OnPossess(APawn* InPawn)
 		Blackboard->InitializeBlackboard(*BehaviorTree->BlackboardAsset);
 	}
 }
+
+void ACustomerAIController::TakeProduct(AProduct* Product)
+{
+	Products.Add(Product);
+}
+
+AProduct* ACustomerAIController::PutProduct()
+{
+	if (Products.Num() > 0)
+	{
+		AProduct* Product = Products[0];
+		Products.RemoveAt(0);
+		return Product;
+	}
+	return nullptr;
+}
+
+bool ACustomerAIController::HasProducts() const
+{
+	return Products.Num() > 0;
+}
