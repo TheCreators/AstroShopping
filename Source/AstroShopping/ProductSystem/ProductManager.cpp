@@ -73,7 +73,8 @@ void AProductManager::SaveData_Implementation(UAstroShoppingSaveGame* CurrentGam
 		FProductSaveData SaveData;
 		SaveData.Transform = Product->Mesh->GetComponentTransform();
 		SaveData.ProductDataID = Product->ProductDataID;
-		ProductSaveData.Add(Product->ID, SaveData);
+		SaveData.Quantity = Product->Quantity;
+		ProductSaveData.Add(SaveData);
 	}
 	CurrentGameSave->Products = ProductSaveData;
 }
@@ -89,10 +90,12 @@ void AProductManager::LoadData_Implementation(UAstroShoppingSaveGame* CurrentGam
 void AProductManager::RequestNewProductSpawn(
 	const FProductDataSaveData& Data,
 	const FGuid& ProductDataID,
-	const FTransform& Transform)
+	const FTransform& Transform,
+	const int32 Quantity
+)
 {
 	ProductDataToLoad.Add(ProductDataID, Data);
-	ProductsToLoad.Add(ProductDataID, FProductSaveData{ Transform, ProductDataID });
+	ProductsToLoad.Add(FProductSaveData{ Transform, ProductDataID, Quantity });
 
 	if (ProductDataToLoad.Num() == 1)
 	{
@@ -116,7 +119,7 @@ void AProductManager::LoadProducts()
 {
 	for (auto& ProductToLoad : ProductsToLoad)
 	{
-		SpawnProduct(ProductToLoad.Value.Transform, ProductToLoad.Value.ProductDataID);
+		SpawnProduct(ProductToLoad.Transform, ProductToLoad.ProductDataID, ProductToLoad.Quantity);
 	}
 
 	ProductsToLoad.Empty();
@@ -243,7 +246,8 @@ void AProductManager::Server_NotifyOfProductDataMeshLoadCompletion_Implementatio
 
 class AProduct* AProductManager::SpawnProduct(
 	const FTransform& Transform,
-	const FGuid ProductDataID
+	const FGuid ProductDataID,
+	const int32 Quantity
 )
 {
 	if (!HasAuthority())
@@ -283,6 +287,7 @@ class AProduct* AProductManager::SpawnProduct(
 
 	Product->ProductDataID = ProductDataID;
 	Product->Name = ProductDataSaveData.Name;
+	Product->Quantity = Quantity;
 	Product->FinishSpawning(Transform);
 
 	Products.Add(Product);

@@ -21,6 +21,8 @@ void AProduct::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AProduct, Name);
 	DOREPLIFETIME(AProduct, ProductDataID);
+	DOREPLIFETIME(AProduct, Price);
+	DOREPLIFETIME(AProduct, Quantity);
 }
 
 void AProduct::BeginPlay()

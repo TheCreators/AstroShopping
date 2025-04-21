@@ -13,4 +13,7 @@ struct FProductSaveData
 
 	UPROPERTY(BlueprintReadWrite)
 	FGuid ProductDataID;
+
+	UPROPERTY(BlueprintReadWrite)
+	int32 Quantity;
 };

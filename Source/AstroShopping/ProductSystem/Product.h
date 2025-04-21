@@ -30,8 +30,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = true))
 	TSoftObjectPtr<UTexture2D> ProductThumbnail;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = true))
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = true))
 	int32 Price;
+
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = true))
+	int32 Quantity;
 
 protected:
 	virtual void BeginPlay() override;

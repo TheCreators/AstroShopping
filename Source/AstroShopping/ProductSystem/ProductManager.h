@@ -23,14 +23,16 @@ public:
 	UFUNCTION(BlueprintCallable)
 	class AProduct* SpawnProduct(
 		const FTransform& Transform,
-		const FGuid ProductDataID
+		const FGuid ProductDataID,
+		const int32 Quantity
 	);
 
 	UFUNCTION(BlueprintCallable)
 	void RequestNewProductSpawn(
 		const FProductDataSaveData& Data, 
 		const FGuid& ProductDataID,
-		const FTransform& Transform
+		const FTransform& Transform,
+		const int32 Quantity
 	);
 
 	void SaveData_Implementation(class UAstroShoppingSaveGame* CurrentGameSave) override;
