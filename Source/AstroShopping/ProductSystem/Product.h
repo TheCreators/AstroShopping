@@ -18,9 +18,6 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly)
 	UStaticMeshComponent* Mesh;
 
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
-	FGuid ID;
-
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = true))
 	FGuid ProductDataID;
 

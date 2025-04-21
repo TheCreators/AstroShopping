@@ -20,7 +20,6 @@ void AProduct::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AProduct, Name);
-	DOREPLIFETIME(AProduct, ID);
 	DOREPLIFETIME(AProduct, ProductDataID);
 }
 

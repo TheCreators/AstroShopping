@@ -67,7 +67,7 @@ void AProductManager::SaveData_Implementation(UAstroShoppingSaveGame* CurrentGam
 
 	CurrentGameSave->ProductData = ProductData;
 
-	TMap<FGuid, FProductSaveData> ProductSaveData;
+	TArray<FProductSaveData> ProductSaveData;
 	for (auto& Product : Products)
 	{
 		FProductSaveData SaveData;
@@ -281,7 +281,6 @@ class AProduct* AProductManager::SpawnProduct(
 		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn
 	);
 
-	Product->ID = FGuid::NewGuid();
 	Product->ProductDataID = ProductDataID;
 	Product->Name = ProductDataSaveData.Name;
 	Product->FinishSpawning(Transform);

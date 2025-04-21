@@ -74,7 +74,7 @@ private:
 
 	TMap<FGuid, FProductDataSaveData> ProductDataToLoad;
 
-	TMap < FGuid, FProductSaveData > ProductsToLoad;
+	TArray<FProductSaveData> ProductsToLoad;
 
 	bool IsLoadingProductDataMesh() const;
 

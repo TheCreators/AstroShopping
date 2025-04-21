@@ -41,7 +41,7 @@ EBTNodeResult::Type UCustomerBTTask_TakeProducts::ExecuteTask(UBehaviorTreeCompo
 		return EBTNodeResult::Failed;
 	}
 
-	AProduct* TakenProduct = IProductsContainer::Execute_TakeProduct(ShelfActor, ProductToTake->ID);
+	AProduct* TakenProduct = IProductsContainer::Execute_TakeProduct(ShelfActor, ProductToTake);
 
 	if (!IsValid(TakenProduct))
 	{
