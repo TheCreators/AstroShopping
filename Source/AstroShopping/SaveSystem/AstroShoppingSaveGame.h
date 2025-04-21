@@ -18,7 +18,7 @@ public:
 	void LoadDataForRequester(UObject* Requester);
 
 	UPROPERTY()
-	TMap<FGuid, FProductSaveData> Products;
+	TArray<FProductSaveData> Products;
 
 	UPROPERTY(BlueprintReadWrite)
 	FStoreStatsSaveData StoreStats;

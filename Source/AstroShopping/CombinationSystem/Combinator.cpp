@@ -270,7 +270,8 @@ void ACombinator::Server_RequestLoadProduct_Implementation(int32 Index)
             GameMode->GetProductManager()->RequestNewProductSpawn(
                 { ProductName, 100, ProductModelUrls[SelectedProductIndex] },
                 FGuid::NewGuid(),
-                GetProductSpawnPoint()
+                GetProductSpawnPoint(),
+                10
             );
 
             FTimerHandle TimerHandle;

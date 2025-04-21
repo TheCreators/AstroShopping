@@ -25,5 +25,5 @@ public:
 	TArray<AProduct*> GetProducts() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "ProductContainer")
-	AProduct* TakeProduct(const FGuid& ProductID);
+	AProduct* TakeProduct(class AProduct* Product);
 };
