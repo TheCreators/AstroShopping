@@ -318,8 +318,30 @@ void AProductManager::OnRep_Products()
 		}
 
 		Product->ProductMesh = ProductDataMeshes[Product->ProductDataID];
-		Product->Mesh->SetStaticMesh(ProductDataMeshes[Product->ProductDataID]);
 
 		UE_LOG(LogTemp, Display, TEXT("Product mesh set for ID: %s and product: %s from local role: %d"), *Product->ProductDataID.ToString(), *Product->GetFullName(), GetLocalRole());
 	}
+}
+
+void AProductManager::DespawnProduct(AProduct* Product)
+{
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Error, TEXT("This function can only be called on the server"));
+		return;
+	}
+
+	if (!Product)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Product is null"));
+		return;
+	}
+
+	Product->SetActorHiddenInGame(true);
+	Product->SetActorEnableCollision(false);
+	Product->SetActorTickEnabled(false);
+
+	Products.Remove(Product);
+
+	OnRep_Products();
 }
