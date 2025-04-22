@@ -300,6 +300,11 @@ void AProductManager::OnRep_Products()
 {
 	for (auto& Product : Products)
 	{
+		if (!Product)
+		{
+			continue;
+		}
+
 		if (Product->ProductMesh)
 		{
 			continue;
@@ -337,11 +342,21 @@ void AProductManager::DespawnProduct(AProduct* Product)
 		return;
 	}
 
-	//Product->SetActorHiddenInGame(true);
-	//Product->SetActorEnableCollision(false);
-	//Product->Mesh->SetSimulatePhysics(false);
-	Product->SetActorHiddenInGame(true);
-	//Product->SetActorEnableCollision(false);
+
+	USceneComponent* RootComp = Product->GetRootComponent();
+	if (RootComp)
+	{
+		RootComp->SetVisibility(false);
+	}
+	TArray<USceneComponent*> Components;
+	Product->GetComponents<USceneComponent>(Components);
+	for (USceneComponent* Comp : Components)
+	{
+		Comp->SetVisibility(false);
+	}
+	Product->SetActorEnableCollision(false);
+	Product->Mesh->SetSimulatePhysics(false);
+	Product->SetActorLocation(FVector(0, 0, -10000));
 
 	Products.Remove(Product);
 	OnRep_Products();

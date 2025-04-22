@@ -84,7 +84,7 @@ private:
 	bool IsLoadingProductDataMesh() const;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Products)
-	TArray<TWeakObjectPtr<class AProduct>> Products;
+	TArray<TObjectPtr<class AProduct>> Products;
 
 	int32 NumberOfClientsFinishedLoadingProductDataMesh;
 
