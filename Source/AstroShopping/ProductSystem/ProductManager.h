@@ -35,6 +35,9 @@ public:
 		const int32 Quantity
 	);
 
+	UFUNCTION(BlueprintCallable)
+	void DespawnProduct(AProduct* Product);
+
 	void SaveData_Implementation(class UAstroShoppingSaveGame* CurrentGameSave) override;
 
 	void LoadData_Implementation(class UAstroShoppingSaveGame* CurrentGameSave) override;
