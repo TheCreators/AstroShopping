@@ -33,7 +33,7 @@ public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = true))
 	int32 Price;
 
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = true))
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, meta = (ExposeOnSpawn = true))
 	int32 Quantity;
 
 protected:
