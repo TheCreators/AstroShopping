@@ -337,11 +337,12 @@ void AProductManager::DespawnProduct(AProduct* Product)
 		return;
 	}
 
+	//Product->SetActorHiddenInGame(true);
+	//Product->SetActorEnableCollision(false);
+	//Product->Mesh->SetSimulatePhysics(false);
 	Product->SetActorHiddenInGame(true);
-	Product->SetActorEnableCollision(false);
-	Product->SetActorTickEnabled(false);
+	//Product->SetActorEnableCollision(false);
 
 	Products.Remove(Product);
-
 	OnRep_Products();
 }
