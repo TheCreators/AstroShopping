@@ -13,8 +13,6 @@ void ACustomerAIController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	BlackboardComponent->SetValueAsInt(ShelfsLeftKeyName, 3);
-	
 	if (IsValid(BehaviorTree))
 	{
 		RunBehaviorTree(BehaviorTree);
@@ -29,6 +27,9 @@ void ACustomerAIController::OnPossess(APawn* InPawn)
 	{
 		Blackboard->InitializeBlackboard(*BehaviorTree->BlackboardAsset);
 	}
+
+	BlackboardComponent->SetValueAsInt(ShelfsLeftKeyName, FMath::RandRange(MinShelfsLeft, MaxShelfsLeft));
+	BlackboardComponent->SetValueAsVector(ExitKeyName, InPawn->GetActorLocation());
 }
 
 void ACustomerAIController::TakeProduct(AProduct* Product)

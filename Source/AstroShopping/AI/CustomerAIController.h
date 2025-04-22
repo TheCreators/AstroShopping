@@ -18,6 +18,12 @@ public:
 
 	bool HasProducts() const;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 MinShelfsLeft = 3;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 MaxShelfsLeft = 12;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -35,6 +41,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = true))
 	FName ShelfsLeftKeyName = TEXT("ShelfsLeft");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = true))
+	FName ExitKeyName = TEXT("Exit");
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TArray<class AProduct*> Products;
