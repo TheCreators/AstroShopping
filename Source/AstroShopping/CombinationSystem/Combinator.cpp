@@ -67,6 +67,8 @@ void ACombinator::Reset()
     ProductThumbnailUrls.Empty();
     ProductThumbnailUrls.SetNumZeroed(4);
     OnRep_ProductThumbnailUrls();
+
+    OnReset();
 }
 
 bool ACombinator::IsWorking() const
@@ -80,19 +82,27 @@ void ACombinator::IncreaseProgress()
     OnRep_Progress();
 }
 
-void ACombinator::Server_StartCombination_Implementation(const FString& FirstProductName, const FString& SecondProductName)
+void ACombinator::Server_StartCombination_Implementation(
+    const FString& FirstProductName,
+    const FString& SecondProductName,
+    const int32 FirstProductPrice,
+    const int32 SecondProductPrice
+)
 {
     IncreaseProgress();
 
     UE_LOG(LogTemp, Display, TEXT("Combining %s & %s"), *FirstProductName, *SecondProductName);
 
-    FString Prompt = FString::Printf(TEXT(R"(Combine %s & %s into a new item. Return valid JSON:{"name": "Simple Combined Name","desc": "Clear, literal description for 3D modeling. Focus on basic shape and material. Max 15 words"}. Avoid metaphors and poetic language)"), *FirstProductName, *SecondProductName);
+	FString Prompt = FString::Printf(TEXT(R"(Combine %s (price %s) & %s (price %s) into a new item; generate an interesting game price for the combined item, considering the input prices - the result could be more or less valuable than the sum of its parts reflecting game balance or crafting synergy; return valid JSON:{"name": "Simple Combined Name", "desc": "Clear, literal description for 3D modeling. Focus on basic shape and material. Max 15 words", "price": int} Avoid metaphors and poetic language.)"), *FirstProductName, *FString::FromInt(FirstProductPrice), *SecondProductName, *FString::FromInt(SecondProductPrice));
 
     GenerateCombinedItemProps(
         Prompt,
-        [this](FString GeneratedName, FString GeneratedDescription) {
+        [this](FString GeneratedName, FString GeneratedDescription, int32 GeneratedPrice) {
             ProductName = GeneratedName;
             OnRep_ProductName();
+
+			ProductPrice = GeneratedPrice;
+
             IncreaseProgress();
 
             GenerateCombinedItemModels(
@@ -110,7 +120,7 @@ void ACombinator::Server_StartCombination_Implementation(const FString& FirstPro
 
 void ACombinator::GenerateCombinedItemProps(
     const FString& InputText,
-    TFunction<void(FString, FString)> OnSuccess,
+    TFunction<void(FString, FString, int32)> OnSuccess,
     TFunction<void(FString)> OnError)
 {
     if (!LlmApiClient)
@@ -132,14 +142,17 @@ void ACombinator::GenerateCombinedItemProps(
             if (FJsonSerializer::Deserialize(JsonReader, DataObject) && DataObject.IsValid())
             {
                 FString Name, Description;
+				int32 Price;
                 if (DataObject->TryGetStringField(TEXT("name"), Name) &&
-                    DataObject->TryGetStringField(TEXT("desc"), Description))
+                    DataObject->TryGetStringField(TEXT("desc"), Description) &&
+					DataObject->TryGetNumberField(TEXT("price"), Price)
+                )
                 {
-                    OnSuccess(Name, Description);
+                    OnSuccess(Name, Description, Price);
                 }
                 else
                 {
-                    OnError(TEXT("Unable to extract 'name' or 'description' field from JSON. Response: ") + ResponseContent);
+                    OnError(TEXT("Unable to extract 'name' or 'description' or 'price' field from JSON. Response: ") + ResponseContent);
                 }
             }
             else
@@ -268,7 +281,7 @@ void ACombinator::Server_RequestLoadProduct_Implementation(int32 Index)
             IncreaseProgress();
 
             GameMode->GetProductManager()->RequestNewProductSpawn(
-                { ProductName, 100, ProductModelUrls[SelectedProductIndex] },
+                { ProductName, ProductPrice, ProductModelUrls[SelectedProductIndex] },
                 FGuid::NewGuid(),
                 GetProductSpawnPoint(),
                 10

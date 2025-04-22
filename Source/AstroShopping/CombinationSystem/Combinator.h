@@ -19,7 +19,12 @@ public:
 	virtual void BeginPlay() override;
 
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Combination")
-	void Server_StartCombination(const FString& Product1Name, const FString& Product2Name);
+	void Server_StartCombination(
+		const FString& FirstProductName,
+		const FString& SecondProductName,
+		const int32 FirstProductPrice,
+		const int32 SecondProductPrice
+	);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnRep_Progress();
@@ -39,6 +44,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	FTransform GetProductSpawnPoint() const;
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnReset();
+
 	UFUNCTION(BlueprintPure, Category = "Combination")
 	bool IsWorking() const;
 
@@ -51,6 +59,9 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_ProductName, BlueprintReadOnly, Category = "Product")
 	FString ProductName;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Product")
+	int32 ProductPrice;
+
 	UPROPERTY(ReplicatedUsing = OnRep_ProductThumbnailUrls, BlueprintReadOnly, Category = "Product")
 	TArray<FString> ProductThumbnailUrls;
 
@@ -62,7 +73,7 @@ private:
 
 	void Reset();
 
-	void GenerateCombinedItemProps(const FString& InputText, TFunction<void(FString, FString)> OnSuccess, TFunction<void(FString)> OnError);
+	void GenerateCombinedItemProps(const FString& InputText, TFunction<void(FString, FString, int32)> OnSuccess, TFunction<void(FString)> OnError);
 
 	void GenerateCombinedItemModels(const FString& Prompt, TFunction<void(FString)> OnError);
 
