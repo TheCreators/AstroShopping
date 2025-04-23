@@ -9,16 +9,16 @@ struct FStoreStatsSaveData
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite)
-	int32 Balance;
+	int32 Balance = 200;
 
 	UPROPERTY(BlueprintReadWrite)
-	int32 PruductsSoldAmount;
+	int32 PruductsSoldAmount = 0;
 
 	UPROPERTY(BlueprintReadWrite)
-	int32 CustomersServedAmount;
+	int32 CustomersServedAmount = 0;
 
 	UPROPERTY(BlueprintReadWrite)
-	int32 MoneyEarned;
+	int32 MoneyEarned = 0;
 
 	UPROPERTY(BlueprintReadWrite)
 	float AdsConversionValue = 1;

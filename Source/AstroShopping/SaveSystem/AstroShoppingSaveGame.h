@@ -13,6 +13,8 @@ class ASTROSHOPPING_API UAstroShoppingSaveGame : public USaveGame
 	GENERATED_BODY()
 	
 public:
+	UAstroShoppingSaveGame();
+
 	void SaveAllData(TArray<UObject*> SaveableObjects);
 
 	void LoadDataForRequester(UObject* Requester);
