@@ -14,7 +14,7 @@
   "IsBetaVersion": false,
   "IsExperimentalVersion": false,
   "Installed": true,
-  "EngineVersion": "5.3",
+  "EngineVersion": "5.3.0",
   "Modules": [
     {
       "Name": "glTFRuntime",

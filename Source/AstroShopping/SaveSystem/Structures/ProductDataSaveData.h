@@ -12,7 +12,7 @@ struct FProductDataSaveData
 	FString Name;
 
 	UPROPERTY(BlueprintReadWrite)
-	int32 Price;
+	int32 Price = 0;
 
 	UPROPERTY(BlueprintReadWrite)
 	FString MeshURL;
