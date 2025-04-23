@@ -10,13 +10,14 @@ class ASTROSHOPPING_API UOverheadWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* DisplayText;
-
+	UFUNCTION(BlueprintCallable)
 	void SetDisplayText(FString Text);
 
 	UFUNCTION(BlueprintCallable)
 	void ShowPlayerNetRole(APawn* InPawn);
+
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* DisplayText;
 
 protected:
 	virtual void NativeDestruct() override;
