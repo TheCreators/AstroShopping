@@ -14,7 +14,7 @@ void ABotSpawner::BeginPlay()
 		return;
 	}
 
-	ScheduleNextSpawn();
+	SpawnBot();
 }
 
 void ABotSpawner::ScheduleNextSpawn()
@@ -50,8 +50,8 @@ void ABotSpawner::SpawnBot()
 
 	if (CurrentBotCount >= MaxBots) {
 		UE_LOG(LogTemp, Warning, TEXT("Max bot count reached"));
-		return;
 		ScheduleNextSpawn();
+		return;
 	}
 
 	UWorld* World = GetWorld();
