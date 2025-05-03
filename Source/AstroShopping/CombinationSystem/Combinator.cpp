@@ -107,13 +107,35 @@ void ACombinator::Server_StartCombination_Implementation(
 
             GenerateCombinedItemModels(
                 GeneratedDescription,
-                [](FString ErrorMessage) {
+                [this](FString ErrorMessage) {
                     UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMessage);
+
+                    ShowError(ErrorMessage);
+
+                    FTimerHandle TimerHandle;
+                    GetWorld()->GetTimerManager().SetTimer(
+                        TimerHandle,
+                        this,
+                        &ACombinator::Reset,
+                        5.0f,
+                        false
+                    );
                 }
             );
         },
-        [](FString ErrorMessage) {
+        [this](FString ErrorMessage) {
             UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMessage);
+
+            ShowError(ErrorMessage);
+
+            FTimerHandle TimerHandle;
+            GetWorld()->GetTimerManager().SetTimer(
+                TimerHandle,
+                this,
+                &ACombinator::Reset,
+                5.0f,
+                false
+            );
         }
     );
 }
