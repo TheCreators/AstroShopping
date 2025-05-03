@@ -38,6 +38,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnRep_ProductThumbnailUrls();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void ShowError(const FString& ErrorMessage);
+
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Combination")
 	void Server_RequestLoadProduct(int32 Index);
 
