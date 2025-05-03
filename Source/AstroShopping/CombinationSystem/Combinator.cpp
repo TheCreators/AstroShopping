@@ -31,7 +31,8 @@ void ACombinator::BeginPlay()
 
     LlmApiClient = MakeUnique<FLlmApiClient>(
         UserSettings->GetProxyApiKey(),
-        TEXT("https://api.proxyapi.ru/google/v1/models/gemini-2.0-flash:generateContent")
+        TEXT("https://api.proxyapi.ru/openai/v1/responses"),
+        TEXT("gpt-4.1-mini")
     );
 
     GenieApiClient = MakeUnique<FGenieApiClient>(
@@ -93,7 +94,15 @@ void ACombinator::Server_StartCombination_Implementation(
 
     UE_LOG(LogTemp, Display, TEXT("Combining %s & %s"), *FirstProductName, *SecondProductName);
 
-	FString Prompt = FString::Printf(TEXT(R"(Combine %s (price %s) & %s (price %s) into a new item; generate an interesting game price for the combined item, considering the input prices - the result could be more or less valuable than the sum of its parts reflecting game balance or crafting synergy; return valid JSON:{"name": "Simple Combined Name", "desc": "Clear, literal description for 3D modeling. Focus on basic shape and material. Max 15 words", "price": int} Avoid metaphors and poetic language.)"), *FirstProductName, *FString::FromInt(FirstProductPrice), *SecondProductName, *FString::FromInt(SecondProductPrice));
+    FString Prompt = FString::Printf(
+        TEXT(R"(You are a helpful assistant for a supermarket-style crafting game. Combine %s (price %s) & %s (price %s) into a new item. The generated "name" must be a single, existing English noun (no special characters, numbers, or emojis), must not contain %s or %s, and must reflect both inputs. Devise an integer "price" reflecting game balance or crafting synergy (it can be higher or lower than the sum). Provide a "desc" for 3D modeling: a clear, literal description of shape and material (max 15 words, no metaphors or poetic language). Return exactly this JSON, nothing else: {"name": "RealWord", "desc": "Clear 3D modeling description, max 15 words", "price": int})"),
+        *FirstProductName,
+        *FString::FromInt(FirstProductPrice),
+        *SecondProductName,
+        *FString::FromInt(SecondProductPrice),
+        *FirstProductName,
+        *SecondProductName
+    );
 
     GenerateCombinedItemProps(
         Prompt,

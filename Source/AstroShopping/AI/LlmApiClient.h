@@ -5,7 +5,7 @@
 class ASTROSHOPPING_API FLlmApiClient
 {
 public:
-	FLlmApiClient(const FString& InApiKey, const FString& InBaseUrl);
+	FLlmApiClient(const FString& InApiKey, const FString& InBaseUrl, const FString& InModel);
 	
 	void SendRequest(const FString& InputText,
 		TFunction<void(FString)> OnSuccess,
@@ -16,6 +16,8 @@ private:
 	FString ApiKey;
 
 	FString BaseUrl;
+
+	FString Model;
 
 	FString CreateRequestBody(const FString& InputText) const;
 	
