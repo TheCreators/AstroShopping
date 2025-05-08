@@ -6,6 +6,11 @@
 void UPersistenceSubsystem::CreateGameSave()
 {
 	CurrentGameSave = Cast<UAstroShoppingSaveGame>(UGameplayStatics::CreateSaveGameObject(UAstroShoppingSaveGame::StaticClass()));
+	if (CurrentGameSave != nullptr)
+	{
+		OnGameLoaded.Broadcast(CurrentGameSave);
+		OnGameLoadedNative.Broadcast(CurrentGameSave);
+	}
 }
 
 void UPersistenceSubsystem::LoadGameSaveFromDisk(bool bAsync)
