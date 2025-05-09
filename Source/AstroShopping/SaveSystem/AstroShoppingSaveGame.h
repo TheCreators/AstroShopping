@@ -5,6 +5,7 @@
 #include "Structures/ProductSaveData.h"
 #include "Structures/StoreStatsSaveData.h"
 #include "Structures/ProductDataSaveData.h"
+#include "Structures/FurnitureLocationSaveData.h"
 #include "AstroShoppingSaveGame.generated.h"
 
 UCLASS()
@@ -27,4 +28,10 @@ public:
 
 	UPROPERTY()
 	TMap<FGuid, FProductDataSaveData> ProductData;
+
+	UPROPERTY(BlueprintReadWrite)
+	TMap<FString, FFurnitureLocationSaveData> FurnitureData;
+
+	UPROPERTY(BlueprintReadWrite)
+	bool WasFurnitureSavedBefore;
 };
