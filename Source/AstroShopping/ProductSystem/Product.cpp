@@ -12,8 +12,6 @@ AProduct::AProduct()
 	Mesh->SetSimulatePhysics(true);
 	Mesh->SetCollisionProfileName(TEXT("Interactable"));
 	SetRootComponent(Mesh);
-
-	Price = FMath::RandRange(50, 200);
 }
 
 void AProduct::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

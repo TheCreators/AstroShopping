@@ -287,6 +287,7 @@ class AProduct* AProductManager::SpawnProduct(
 
 	Product->ProductDataID = ProductDataID;
 	Product->Name = ProductDataSaveData.Name;
+	Product->Price = ProductDataSaveData.Price;
 	Product->Quantity = Quantity;
 	Product->FinishSpawning(Transform);
 
