@@ -39,6 +39,21 @@ void ACombinator::BeginPlay()
         UserSettings->GetGenieRefreshToken()
     );
 
+    UserSettings->OnProxyApiKeyChangedNative.AddWeakLambda(this, [this](const FString& NewProxyApiKey)
+        {
+			if (LlmApiClient)
+			{
+				LlmApiClient->SetApiKey(NewProxyApiKey);
+			}
+		});
+	UserSettings->OnGenieRefreshTokenChangedNative.AddWeakLambda(this, [this](const FString& NewGenieRefreshToken)
+		{
+			if (GenieApiClient)
+			{
+				GenieApiClient->SetRefreshToken(NewGenieRefreshToken);
+			}
+		});
+
     Reset();
 }
 

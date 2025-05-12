@@ -12,7 +12,12 @@ FString UAstroShoppingUserSettings::GetProxyApiKey()
 
 void UAstroShoppingUserSettings::SetProxyApiKey(const FString& Value)
 {
-	ProxyApiKey = Value;
+	if (!ProxyApiKey.Equals(Value))
+	{
+		ProxyApiKey = Value;
+		OnProxyApiKeyChanged.Broadcast(Value);
+		OnProxyApiKeyChangedNative.Broadcast(Value);
+	}
 }
 
 FString UAstroShoppingUserSettings::GetGenieRefreshToken()
@@ -22,7 +27,12 @@ FString UAstroShoppingUserSettings::GetGenieRefreshToken()
 
 void UAstroShoppingUserSettings::SetGenieRefreshToken(const FString& Value)
 {
-	GenieRefreshToken = Value;
+	if (!GenieRefreshToken.Equals(Value))
+	{
+		GenieRefreshToken = Value;
+		OnGenieRefreshTokenChanged.Broadcast(Value);
+		OnGenieRefreshTokenChangedNative.Broadcast(Value);
+	}
 }
 
 float UAstroShoppingUserSettings::GetMasterVolume()

@@ -40,6 +40,8 @@ public:
 		TFunction<void(const FModelStatusResponse&)> OnSuccess,
 		TFunction<void(FString)> OnError);
 
+	void SetRefreshToken(const FString& NewRefreshToken);
+
 private:
 	FString CreateRequestBody(const FString& Prompt) const;
 
