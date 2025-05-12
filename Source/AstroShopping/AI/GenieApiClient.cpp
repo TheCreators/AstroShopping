@@ -8,6 +8,11 @@ FGenieApiClient::FGenieApiClient(const FString& InRefreshToken) : RefreshToken(I
 	BaseUrl = TEXT("https://webapp.engineeringlumalabs.com/api/v3");
 }
 
+void FGenieApiClient::SetRefreshToken(const FString& NewRefreshToken)
+{
+	RefreshToken = NewRefreshToken;
+}
+
 void FGenieApiClient::SendModelsGenerationRequest(const FString& Prompt,
 	TFunction<void(const FModelsGenerationResponse&)> OnSuccess,
 	TFunction<void(FString)> OnError)

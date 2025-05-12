@@ -12,6 +12,8 @@ public:
 		TFunction<void(FString)> OnError,
 		bool bFullReturn = true);
 
+	void SetApiKey(const FString& NewApiKey);
+
 private:
 	FString ApiKey;
 

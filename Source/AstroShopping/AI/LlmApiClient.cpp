@@ -10,6 +10,11 @@ FLlmApiClient::FLlmApiClient(const FString& InApiKey, const FString& InBaseUrl, 
 {
 }
 
+void FLlmApiClient::SetApiKey(const FString& NewApiKey)
+{
+    ApiKey = NewApiKey;
+}
+
 void FLlmApiClient::SendRequest(const FString& InputText,
     TFunction<void(FString)> OnSuccess,
     TFunction<void(FString)> OnError,
