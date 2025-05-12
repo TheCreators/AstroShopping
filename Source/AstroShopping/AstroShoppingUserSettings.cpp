@@ -52,5 +52,10 @@ float UAstroShoppingUserSettings::GetMouseSensitivity()
 
 void UAstroShoppingUserSettings::SetMouseSensitivity(float Value)
 {
-	MouseSensitivity = Value;
+	if (!FMath::IsNearlyEqual(MouseSensitivity, Value))
+	{
+		MouseSensitivity = Value;
+		OnMouseSensitivityChanged.Broadcast(Value);
+		OnMouseSensitivityChangedNative.Broadcast(Value);
+	}
 }

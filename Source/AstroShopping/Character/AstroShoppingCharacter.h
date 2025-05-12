@@ -49,4 +49,7 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Debug", BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
+
+	UPROPERTY()
+	float MouseSensitivity;
 };

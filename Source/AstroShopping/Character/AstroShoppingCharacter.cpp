@@ -5,6 +5,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Components/WidgetComponent.h"
 #include "AstroShopping/InteractionSystem/InteractionComponent.h"
+#include "AstroShopping/AstroShoppingUserSettings.h"
 
 
 AAstroShoppingCharacter::AAstroShoppingCharacter()
@@ -40,6 +41,16 @@ void AAstroShoppingCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+	if (auto* Settings = UAstroShoppingUserSettings::GetAstroShoppingUserSettings())
+	{
+		MouseSensitivity = Settings->GetMouseSensitivity();
+
+		Settings->OnMouseSensitivityChangedNative.AddLambda([this](float NewSens)
+			{
+				MouseSensitivity = NewSens;
+			});
+	}
 }
 
 void AAstroShoppingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -74,8 +85,8 @@ void AAstroShoppingCharacter::Look(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
+		AddControllerYawInput(LookAxisVector.X * MouseSensitivity);
+		AddControllerPitchInput(LookAxisVector.Y * MouseSensitivity);
 	}
 }
 
