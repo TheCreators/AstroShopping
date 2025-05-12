@@ -4,6 +4,9 @@
 #include "GameFramework/GameUserSettings.h"
 #include "AstroShoppingUserSettings.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMouseSensitivityChanged, float, NewSensitivity);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMouseSensitivityChangedNative, float);
+
 UCLASS()
 class ASTROSHOPPING_API UAstroShoppingUserSettings : public UGameUserSettings
 {
@@ -42,6 +45,11 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void SetMouseSensitivity(float Value);
+
+	UPROPERTY(BlueprintAssignable)
+	FOnMouseSensitivityChanged OnMouseSensitivityChanged;
+
+	FOnMouseSensitivityChangedNative OnMouseSensitivityChangedNative;
 	
 protected:
 	UPROPERTY(Config)
