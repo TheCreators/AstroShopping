@@ -33,14 +33,6 @@ AAstroShoppingCharacter::AAstroShoppingCharacter()
 void AAstroShoppingCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
 
 	if (auto* Settings = UAstroShoppingUserSettings::GetAstroShoppingUserSettings())
 	{
@@ -53,8 +45,11 @@ void AAstroShoppingCharacter::BeginPlay()
 	}
 }
 
+
 void AAstroShoppingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
     {
         EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);

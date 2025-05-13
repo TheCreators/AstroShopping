@@ -33,9 +33,6 @@ private:
 	USkeletalMeshComponent* Mesh1P;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
-	class UInputMappingContext* DefaultMappingContext;
-
-	UPROPERTY(EditAnywhere, Category = "Input")
 	class UInputAction* MoveAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
