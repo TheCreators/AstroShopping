@@ -16,6 +16,7 @@ AProductManager::AProductManager()
 
 	NumberOfClientsFinishedLoadingProductDataMesh = 99;
 	bHasStartedLoading = false;
+	bHasFinishedLoading = false;
 }
 
 void AProductManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -82,6 +83,7 @@ void AProductManager::SaveData_Implementation(UAstroShoppingSaveGame* CurrentGam
 void AProductManager::LoadData_Implementation(UAstroShoppingSaveGame* CurrentGameSave)
 {
 	bHasStartedLoading = true;
+	OnStartedLoading();
 	ProductDataToLoad = CurrentGameSave->ProductData;
 	ProductsToLoad = CurrentGameSave->Products;
 	LoadNextProductData();
@@ -120,6 +122,12 @@ void AProductManager::LoadProducts()
 	for (auto& ProductToLoad : ProductsToLoad)
 	{
 		SpawnProduct(ProductToLoad.Transform, ProductToLoad.ProductDataID, ProductToLoad.Quantity);
+	}
+
+	if (!bHasFinishedLoading)
+	{
+		OnFinishedLoading();
+		bHasFinishedLoading = true;
 	}
 
 	ProductsToLoad.Empty();
