@@ -110,8 +110,7 @@ void ACombinator::Server_StartCombination_Implementation(
     UE_LOG(LogTemp, Display, TEXT("Combining %s & %s"), *FirstProductName, *SecondProductName);
 
     FString Prompt = FString::Printf(
-        TEXT(R"(You are a helpful assistant for a supermarket-style crafting game. Combine %s (price %s) & %s (price %s) into a new item. The generated "name" must be a single, existing English noun (no special characters, numbers, or emojis), must not contain %s or %s, and must reflect both inputs. Devise an integer "price" reflecting game balance or crafting synergy (it can be higher or lower than the sum). Provide a "desc" for 3D modeling: a clear, literal description of shape and material (max 15 words, no metaphors or poetic language). Return exactly this JSON, nothing else: {"name": "RealWord", "desc": "Clear 3D modeling description, max 15 words", "price": int})"),
-        *FirstProductName,
+        TEXT(R"(You are a helpful assistant for a supermarket-style crafting game. Combine %s (price %s) & %s (price %s) into a new item. The generated "name" must be a single, existing English noun (no special characters, numbers, or emojis), must not contain %s or %s, and must reflect both inputs. Devise an integer "price" reflecting game balance or crafting synergy. Provide a "desc" showing how this item appears in a supermarket: Use "PackagingFormat of [name]" if packaged (e.g., "Paper bag of flour"), or just "[Name]" if sold unpackaged (e.g., "Burger"). Description must: 1) Contain the exact generated name 2) Be ultra-concise (3-7 words) 3) Use literal packaging terms when relevant (bottle, crate, jar, etc). Return exactly this JSON: {"name": "RealWord", "desc": "Packaging + name or just name", "price": int})"), *FirstProductName,
         *FString::FromInt(FirstProductPrice),
         *SecondProductName,
         *FString::FromInt(SecondProductPrice),
