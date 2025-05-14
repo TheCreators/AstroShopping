@@ -45,6 +45,12 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_NotifyOfProductDataMeshLoadCompletion();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnStartedLoading();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnFinishedLoading();
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<class AProduct> ProductClass;
 
@@ -91,4 +97,6 @@ private:
 	FGuid CurrentlyLoadingProductDataID;
 
 	bool bHasStartedLoading;
+
+	bool bHasFinishedLoading;
 };
