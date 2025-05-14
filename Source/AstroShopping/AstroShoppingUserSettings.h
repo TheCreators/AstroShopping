@@ -73,11 +73,11 @@ protected:
 	FString GenieRefreshToken;
 
 	UPROPERTY(Config)
-	float MasterVolume;
+	float MasterVolume = 0.5;
 
 	UPROPERTY(Config)
-	float MusicVolume;
+	float MusicVolume = 0.5;
 
 	UPROPERTY(Config)
-	float MouseSensitivity;
+	float MouseSensitivity = 1;
 };
